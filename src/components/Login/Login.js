@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   TextField,
   Button,
@@ -11,19 +11,19 @@ import {
   Grid,
   Divider,
   CircularProgress,
-} from '@mui/material';
-import { LockOutlined, PersonOutline } from '@mui/icons-material';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { useNavigate } from 'react-router-dom';
-import styles from './Login.module.css';
+} from "@mui/material";
+import { LockOutlined, PersonOutline } from "@mui/icons-material";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { useNavigate } from "react-router-dom";
+import styles from "./Login.module.css";
 import logo from "../Images/logo.png";
-import Cookies from 'js-cookie';
-import axios from 'axios';
+import Cookies from "js-cookie";
+import axios from "axios";
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false); // State to control loading indicator
   const navigate = useNavigate();
@@ -32,15 +32,18 @@ const Login = () => {
     e.preventDefault();
     setLoading(true); // Start loading
     try {
-      const response = await axios.post('https://lmsapp-plvj.onrender.com/admin/auth/logIn', {
-        email: username,
-        password,
-      });
+      const response = await axios.post(
+        "https://lmsapp-plvj.onrender.com/admin/auth/logIn",
+        {
+          email: username,
+          password,
+        }
+      );
 
       if (response.data.status) {
-        Cookies.set('token', response.data.token);
-        navigate('/dashboard');
-      } 
+        Cookies.set("token", response.data.data);
+        navigate("/dashboard");
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         // Axios error (HTTP error)
@@ -61,7 +64,14 @@ const Login = () => {
 
   return (
     <div className={styles.main}>
-      <img className={styles.logo} src={logo} height={50} width={50} title='PK Pani Wala' alt='PK Pani Wala' />
+      <img
+        className={styles.logo}
+        src={logo}
+        height={50}
+        width={50}
+        title="PK Pani Wala"
+        alt="PK Pani Wala"
+      />
       <Container maxWidth="sm" className={styles.container}>
         <Box display="flex" flexDirection="column" alignItems="center">
           <Avatar className={styles.avatar}>
@@ -95,7 +105,7 @@ const Login = () => {
             <Grid item xs={12}>
               <TextField
                 label="Password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 variant="outlined"
                 fullWidth
                 value={password}
@@ -133,7 +143,7 @@ const Login = () => {
             {loading ? (
               <CircularProgress size={24} color="inherit" /> // Show loading spinner
             ) : (
-              'Login'
+              "Login"
             )}
           </Button>
         </Box>

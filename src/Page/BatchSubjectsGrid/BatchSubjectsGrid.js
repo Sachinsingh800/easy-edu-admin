@@ -3,6 +3,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import {
   DataGrid,
+  GridActionsCellItem,
   GridToolbarContainer,
   GridToolbarExport,
   GridToolbarFilterButton,
@@ -24,9 +25,15 @@ import {
   InputAdornment,
   Skeleton,
   Checkbox,
+  Snackbar,
+  Alert
 } from "@mui/material";
 import { useParams } from "react-router-dom";
-import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
+import { 
+  Add as AddIcon, 
+  Search as SearchIcon, 
+  Edit as EditIcon 
+} from "@mui/icons-material";
 
 const BatchSubjectsGrid = () => {
   const [rows, setRows] = useState([]);
@@ -35,7 +42,10 @@ const BatchSubjectsGrid = () => {
   const [dialogLoading, setDialogLoading] = useState(false);
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
+  const [selectedSubjectForUpdate, setSelectedSubjectForUpdate] = useState(null);
+  const [currentBatchSubjectId, setCurrentBatchSubjectId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { id, batchId } = useParams();
 
@@ -51,6 +61,25 @@ const BatchSubjectsGrid = () => {
           sx={{ width: 48, height: 48, boxShadow: 1 }}
         />
       ),
+    },
+    {
+      field: "actions",
+      type: "actions",
+      headerName: "Actions",
+      width: 100,
+      getActions: (params) => [
+        <GridActionsCellItem
+          icon={<EditIcon />}
+          label="Edit"
+          onClick={() => {
+            setCurrentBatchSubjectId(params.row._id);
+            setSelectedSubjectForUpdate(params.row.subjectId);
+            setOpenEditDialog(true);
+            setError(null);
+            fetchAllSubjects();
+          }}
+        />,
+      ],
     },
   ];
 
@@ -101,8 +130,26 @@ const BatchSubjectsGrid = () => {
       await fetchBatchSubjects();
       setOpenDialog(false);
       setSelectedSubject(null);
+      setError(null);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to add subject");
+    }
+  };
+
+  const handleUpdateSubject = async () => {
+    try {
+      if (!selectedSubjectForUpdate) return;
+      const token = Cookies.get("token");
+      await axios.put(
+        `https://lmsapp-plvj.onrender.com/admin/batches/subjects/update/${currentBatchSubjectId}`,
+        { subject: selectedSubjectForUpdate },
+        { headers: { "x-admin-token": token } }
+      );
+      await fetchBatchSubjects();
+      setOpenEditDialog(false);
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update subject");
     }
   };
 
@@ -114,6 +161,69 @@ const BatchSubjectsGrid = () => {
     fetchBatchSubjects();
   }, []);
 
+  const renderSubjectCards = (subjects, selectedState, setSelectedState) => (
+    <Grid container spacing={3}>
+      {subjects.map((subject) => (
+        <Grid item xs={12} sm={6} md={4} key={subject._id}>
+          <Card
+            onClick={() => setSelectedState(subject._id)}
+            sx={{
+              cursor: "pointer",
+              border: 2,
+              borderColor:
+                selectedState === subject._id ? "primary.main" : "divider",
+              boxShadow: selectedState === subject._id ? 3 : 0,
+              transition: "all 0.2s ease",
+              "&:hover": {
+                transform: "translateY(-4px)",
+              },
+            }}
+          >
+            <CardContent>
+              <Avatar
+                src={subject.icon.url}
+                sx={{
+                  width: 64,
+                  height: 64,
+                  mb: 2,
+                  mx: "auto",
+                }}
+              />
+              <Typography
+                variant="h6"
+                align="center"
+                gutterBottom
+                fontWeight="600"
+              >
+                {subject.subjectName}
+              </Typography>
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                align="center"
+              >
+                {subject.clsId.clsName}
+              </Typography>
+              <Checkbox
+                checked={selectedState === subject._id}
+                color="primary"
+                sx={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                }}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  );
+
+  const handleCloseError = () => {
+    setError(null);
+  };
+
   return (
     <div style={{ height: "80vh", width: "100%", padding: 24 }}>
       <Button
@@ -121,6 +231,7 @@ const BatchSubjectsGrid = () => {
         startIcon={<AddIcon />}
         onClick={() => {
           setOpenDialog(true);
+          setError(null);
           fetchAllSubjects();
         }}
         sx={{ mb: 3 }}
@@ -148,9 +259,13 @@ const BatchSubjectsGrid = () => {
         }}
       />
 
+      {/* Add Subject Dialog */}
       <Dialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={() => {
+          setOpenDialog(false);
+          setError(null);
+        }}
         fullWidth
         maxWidth="md"
         PaperProps={{ sx: { borderRadius: 4 } }}
@@ -196,64 +311,7 @@ const BatchSubjectsGrid = () => {
               No subjects found
             </Typography>
           ) : (
-            <Grid container spacing={3}>
-              {filteredSubjects.map((subject) => (
-                <Grid item xs={12} sm={6} md={4} key={subject._id}>
-                  <Card
-                    onClick={() => setSelectedSubject(subject._id)}
-                    sx={{
-                      cursor: "pointer",
-                      border: 2,
-                      borderColor:
-                        selectedSubject === subject._id
-                          ? "primary.main"
-                          : "divider",
-                      boxShadow: selectedSubject === subject._id ? 3 : 0,
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        transform: "translateY(-4px)",
-                      },
-                    }}
-                  >
-                    <CardContent>
-                      <Avatar
-                        src={subject.icon.url}
-                        sx={{
-                          width: 64,
-                          height: 64,
-                          mb: 2,
-                          mx: "auto",
-                        }}
-                      />
-                      <Typography
-                        variant="h6"
-                        align="center"
-                        gutterBottom
-                        fontWeight="600"
-                      >
-                        {subject.subjectName}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        align="center"
-                      >
-                        {subject.clsId.clsName}
-                      </Typography>
-                      <Checkbox
-                        checked={selectedSubject === subject._id}
-                        color="primary"
-                        sx={{
-                          position: "absolute",
-                          top: 8,
-                          right: 8,
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+            renderSubjectCards(filteredSubjects, selectedSubject, setSelectedSubject)
           )}
         </DialogContent>
 
@@ -262,6 +320,7 @@ const BatchSubjectsGrid = () => {
             onClick={() => {
               setOpenDialog(false);
               setSelectedSubject(null);
+              setError(null);
             }}
             variant="outlined"
           >
@@ -278,16 +337,98 @@ const BatchSubjectsGrid = () => {
         </DialogActions>
       </Dialog>
 
-      {error && (
-        <Typography
-          color="error"
-          variant="body2"
-          mt={2}
-          sx={{ bgcolor: "error.light", p: 2, borderRadius: 2 }}
-        >
+      {/* Edit Subject Dialog */}
+      <Dialog
+        open={openEditDialog}
+        onClose={() => {
+          setOpenEditDialog(false);
+          setError(null);
+        }}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{ sx: { borderRadius: 4 } }}
+      >
+        <DialogTitle sx={{ bgcolor: "background.paper", py: 3 }}>
+          <Typography variant="h6" fontWeight="600">
+            Update Subject
+          </Typography>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ py: 3 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search subjects..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ mb: 3 }}
+          />
+
+          {dialogLoading ? (
+            <Grid container spacing={3}>
+              {[1, 2, 3].map((i) => (
+                <Grid item xs={12} sm={6} md={4} key={i}>
+                  <Skeleton variant="rectangular" height={150} />
+                </Grid>
+              ))}
+            </Grid>
+          ) : filteredSubjects.length === 0 ? (
+            <Typography
+              variant="body1"
+              color="textSecondary"
+              align="center"
+              py={4}
+            >
+              No subjects found
+            </Typography>
+          ) : (
+            renderSubjectCards(
+              filteredSubjects,
+              selectedSubjectForUpdate,
+              setSelectedSubjectForUpdate
+            )
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 3, bgcolor: "background.paper" }}>
+          <Button
+            onClick={() => {
+              setOpenEditDialog(false);
+              setSelectedSubjectForUpdate(null);
+              setError(null);
+            }}
+            variant="outlined"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleUpdateSubject}
+            variant="contained"
+            color="primary"
+            disabled={!selectedSubjectForUpdate}
+          >
+            Update Subject
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={handleCloseError}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseError} severity="error" sx={{ width: '100%' }}>
           {error}
-        </Typography>
-      )}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

@@ -1,0 +1,40 @@
+.loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .errorContainer {
+    padding: 2rem;
+    margin-top: 2rem;
+  }
+  
+  .blogContainer {
+    padding: 2rem;
+    margin-top: 2rem;
+  }
+  
+  .title {
+    margin-bottom: 2rem;
+    color: #1976d2;
+    text-align: center;
+  }
+  
+  .blogList {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .blogItem {
+    background-color: white;
+    margin: 0.5rem 0;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease-in-out;
+  
+    &:hover {
+      transform: translateX(4px);
+    }
+  }

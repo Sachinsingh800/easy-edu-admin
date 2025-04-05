@@ -1,0 +1,196 @@
+/* src/components/StudentHierarchy/StudentHierarchy.module.css */
+.container {
+    padding: 2rem!important;
+    position: relative!important;
+    min-height: 100vh!important;
+  }
+  
+  .backdrop {
+    z-index: 9999 !important;
+    color: #fff !important;
+  }
+  
+  .header {
+    display: flex!important;
+    align-items: center!important;
+    gap: 2rem!important;
+    margin-bottom: 2rem!important;
+  }
+  
+  .title {
+    color: #3f51b5;
+    font-weight: 700 !important;
+  }
+  
+  .searchBar {
+    margin-bottom: 2rem!important;
+    background-color: white!important;
+    border-radius: 8px!important;
+  }
+  
+  .cardGrid {
+    margin-top: 1rem!important;
+  }
+  
+  .card {
+    height: 200px!important;
+    cursor: pointer!important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1)!important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px)!important;
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  .cardContent {
+    height: 100%;
+    display: flex !important;
+    flex-direction: column!important;
+    align-items: center!important;
+    justify-content: center!important;
+    text-align: center!important;
+  }
+  
+  .cardIcon {
+    margin-bottom: 1rem!important;
+  }
+  
+  .cardTitle {
+    color: #2d3748!important;
+    font-weight: 600 !important;
+  }
+  
+  .avatar {
+    width: 80px !important;
+    height: 80px !important;
+    margin-top: 1rem;
+    border: 2px solid #5C6BC0 !important;
+  }
+  
+  .analyticsCard {
+    max-width: 800px!important;
+    margin: 2rem auto!important;
+    padding: 2rem!important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .chartContainer {
+    text-align: center!important;
+    padding: 2rem!important;
+    border-radius: 12px!important;
+    color: white!important;
+  }
+  
+  .percentage {
+    font-weight: 700 !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .analyticsDetail {
+    display: flex!important;
+    justify-content: space-between!important;
+    align-items: center!important;
+    padding: 1rem!important;
+    margin-bottom: 1rem!important;
+    background-color: #f8f9fa!important;
+    border-radius: 8px!important;
+  }
+  
+  .attended {
+    color: #4CAF50 !important;
+  }
+  
+  .absent {
+    color: #F44336 !important;
+  }
+  
+  @media (max-width: 600px) {
+    .container {
+      padding: 1rem;
+    }
+  
+    .header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+  
+    .card {
+      height: 160px;
+    }
+  
+    .cardTitle {
+      font-size: 1rem !important;
+    }
+  
+    .analyticsCard {
+      margin: 1rem;
+      padding: 1rem;
+    }
+  }
+
+  /* StudentHierarchy.module.css */
+.analyticsCard {
+  margin: 2rem 0;
+  padding: 1rem;
+}
+
+.analyticsDetail {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.chartContainer {
+  position: relative;
+  text-align: center;
+}
+
+.percentage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  color: #333;
+}
+
+.completed {
+  color: #4caf50;
+}
+
+.incomplete {
+  color: #f44336;
+}
+
+.attended {
+  color: #4caf50;
+}
+
+.absent {
+  color: #f44336;
+}
+
+.attendanceCard {
+  transition: box-shadow 0.3s;
+}
+
+.attendanceCard:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.attendanceContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem !important;
+}
+
+.statusIcon {
+  font-size: 1.8rem !important;
+}

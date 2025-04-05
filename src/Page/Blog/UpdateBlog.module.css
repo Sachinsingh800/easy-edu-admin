@@ -1,0 +1,260 @@
+.blogEditorContainer {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.blogForm {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.formGroup {
+    margin-bottom: 1.5rem;
+}
+
+.titleInput {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.titleInput:focus {
+    outline: none;
+    border-color: #646cff;
+    box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2);
+}
+
+.subtitleInput {
+    width: 100%;
+    padding: 0.8rem;
+    font-size: 1.2rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.subtitleInput:focus {
+    outline: none;
+    border-color: #646cff;
+    box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2);
+}
+
+.imageUploadLabel {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: #f0f2f5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.imageUploadLabel:hover {
+    background-color: #e4e6e9;
+}
+
+.imageUploadInput {
+    display: none;
+}
+
+.imagePreview {
+    margin-top: 1rem;
+    max-width: 400px;
+    border: 2px dashed #e0e0e0;
+    border-radius: 4px;
+    padding: 0.5rem;
+}
+
+.imagePreview img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.buttonGroup {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.previewButton {
+    padding: 0.75rem 2rem;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.previewButton:hover {
+    background-color: #45a049;
+}
+
+.submitButton {
+    padding: 0.75rem 2rem;
+    background-color: #646cff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.submitButton:hover {
+    background-color: #4b52cc;
+}
+
+.previewOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 999000!important;
+    overflow-y: auto;
+    padding: 2rem;
+}
+
+.previewContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    position: relative;
+}
+
+.closePreview {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #666;
+    cursor: pointer;
+    padding: 0 0.5rem;
+}
+
+.closePreview:hover {
+    color: #333;
+}
+
+.previewTitle {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.previewSubtitle {
+    font-size: 1.5rem;
+    color: #666;
+}
+.previewAuthor{
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.previewFeaturedImage {
+    margin-bottom: 2rem;
+}
+
+.previewFeaturedImage img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.previewBody {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #444;
+}
+
+.previewBody h2 {
+    font-size: 1.8rem;
+    margin: 2rem 0 1rem;
+}
+
+.previewBody p {
+    margin-bottom: 1.5rem;
+}
+
+.previewBody table {
+    width: 100%;
+    margin: 2rem 0;
+    border-collapse: collapse;
+}
+
+.previewBody td, 
+.previewBody th {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+.previewBody th {
+    background-color: #646cff;
+    color: white;
+}
+
+.previewBody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+@media (max-width: 768px) {
+    .blogEditorContainer {
+        padding: 0 0.5rem;
+        margin: 1rem auto;
+    }
+
+    .blogForm {
+        padding: 1rem;
+    }
+
+    .titleInput {
+        font-size: 1.25rem;
+    }
+
+    .previewTitle {
+        font-size: 2rem;
+    }
+    
+    .previewSubtitle {
+        font-size: 1.25rem;
+    }
+
+    .buttonGroup {
+        flex-direction: column;
+    }
+
+    .previewButton,
+    .submitButton {
+        width: 100%;
+        text-align: center;
+    }
+
+    .previewOverlay {
+        padding: 1rem;
+    }
+
+    .previewContent {
+        padding: 1rem;
+    }
+}

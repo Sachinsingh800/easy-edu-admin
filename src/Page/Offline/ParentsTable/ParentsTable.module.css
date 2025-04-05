@@ -1,0 +1,27 @@
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+  }
+  
+  .toolbarRight {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .formContainer {
+    padding: 1rem;
+    min-width: 400px;
+  }
+  
+  .MuiDialog-paper {
+    border-radius: 15px !important;
+  }
+  
+  .MuiButton-root {
+    text-transform: none !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    padding: 8px 20px !important;
+  }

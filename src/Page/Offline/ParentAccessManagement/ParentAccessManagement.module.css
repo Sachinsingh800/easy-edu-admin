@@ -1,0 +1,48 @@
+.container {
+    padding: 2rem;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 2rem;
+  }
+  
+  .title {
+    font-weight: 600 !important;
+    flex-shrink: 0;
+  }
+  
+  .select {
+    min-width: 200px;
+  }
+  
+  .table {
+    margin-top: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .loading {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+  }
+  
+  .accordion {
+    margin: 0.5rem 0;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .accessDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .accessDetails > * {
+    font-size: 0.9rem;
+  }

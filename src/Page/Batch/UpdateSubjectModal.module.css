@@ -1,0 +1,36 @@
+.modalContainer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 600px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    padding: 24px;
+  }
+  
+  .closeButton {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+  
+  .title {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .submitButton {
+    margin-top: 16px;
+    background-color: #1976d2;
+    color: white;
+  }
+  

@@ -1,0 +1,142 @@
+.main {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100vh !important;
+  width: 100vw !important;
+  background-image: url('../Images/class-backgroud.webp') !important; /* Use your preferred background image */
+  background-size: cover !important;
+  background-position: center !important;
+  backdrop-filter: blur(5px) !important; /* Blur effect for background */
+  overflow: hidden !important;
+  padding: 10px; /* Add padding for mobile devices */
+}
+.logo{
+  position: fixed;
+  left: 2%;
+  top: 2%;
+  color: red;
+}
+.container {
+  background: rgba(255, 255, 255, 0.2) !important; /* Frosted glass effect */
+  border-radius: 16px !important;
+  padding: 40px 30px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important; /* Depth with shadow */
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  animation: fadeIn 1s ease-in-out !important;
+  position: relative !important;
+  width: 100%;
+  max-width: 500px; /* Adjust for smaller screens */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0 !important;
+    transform: translateY(-10px) !important;
+  }
+  to {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+}
+
+.avatar {
+  background-color: rgba(25, 118, 210, 0.8) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+  margin-bottom: 20px !important;
+  width: 60px;
+  height: 60px;
+}
+
+.title {
+  color: white !important;
+  font-weight: 700 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+  margin-bottom: 20px !important;
+  font-size: 1.5rem; /* Responsive font size */
+  text-align: center; /* Center-align text */
+}
+
+.divider {
+  width: 100% !important;
+  margin: 20px 0 !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.form {
+  width: 100% !important;
+}
+
+.input {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 8px !important;
+  font-size: 1rem;
+}
+
+.input:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
+  border-color: #1976d2 !important;
+}
+
+.button {
+  margin-top: 20px !important;
+  padding: 12px !important;
+  background: linear-gradient(135deg, #1976d2, #1565c0) !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  color: white !important;
+  text-transform: uppercase !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  transition: background-color 0.3s ease, transform 0.2s ease !important;
+}
+
+.button:hover {
+  background: linear-gradient(135deg, #0d47a1, #1976d2) !important;
+  transform: scale(1.03) !important;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Mobile Styles */
+@media (max-width: 600px) {
+  .container {
+    padding: 20px 15px !important;
+  }
+
+  .avatar {
+    width: 50px;
+    height: 50px;
+  }
+
+  .title {
+    font-size: 1.25rem !important;
+  }
+
+  .input {
+    font-size: 0.9rem;
+  }
+
+  .button {
+    font-size: 14px !important;
+    padding: 10px !important;
+  }
+}
+
+/* Tablet Styles */
+@media (max-width: 900px) {
+  .container {
+    padding: 30px 20px !important;
+  }
+
+  .title {
+    font-size: 1.4rem !important;
+  }
+
+  .input {
+    font-size: 1rem;
+  }
+
+  .button {
+    font-size: 15px !important;
+  }
+}

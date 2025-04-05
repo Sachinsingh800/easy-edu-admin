@@ -1,0 +1,67 @@
+.container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .searchBar {
+    flex-grow: 1;
+    max-width: 400px;
+  }
+  
+  .cardGrid {
+    margin-top: 2rem;
+  }
+  
+  .batchCard {
+    padding: 1.5rem;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  
+  .formContainer {
+    padding: 2rem;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+  }
+  
+  .actionButtons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .statusIndicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .addButton{
+    position: absolute !important;
+    top: 9px !important;
+    right: 90px !important;
+    color: #6c757d !important;
+    background-color: #f8f9fa !important;
+    padding: 6px !important;
+  }
+  .addButton:hover {
+    background-color: #e9ecef !important;
+  }
+  

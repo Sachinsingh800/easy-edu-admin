@@ -1,0 +1,35 @@
+.container {
+    padding: 2rem;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  .title {
+    font-weight: 600 !important;
+  }
+  
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .table {
+    margin-top: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .loading {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+  }
+  
+  .form {
+    padding: 1rem 0;
+  }

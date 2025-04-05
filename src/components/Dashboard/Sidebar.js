@@ -35,46 +35,46 @@ const Sidebar = () => {
       icon: <FormatListBulletedIcon />,
       path: "/dashboard/subjects-list",
     },
-    {
-      text: "Teachers List",
-      icon: <PersonIcon />,
-      path: "/dashboard/teachers-list",
-    },
-    {
-      text: "Student Data",
-      icon: <Face3Icon />,
-      path: "/dashboard/student-data",
-    },
-    {
-      text: "Tuition Dashboard",
-      icon: <ApartmentIcon />,
-      path: "/dashboard/tuition-dashboard",
-    },
-    {
-      text: "Toppers List",
-      icon: <Person4Icon />,
-      path: "/dashboard/toppers-list",
-    },
-    {
-      text: "Blog",
-      icon: <PagesIcon />,
-      path: "/dashboard/category-management",
-    },
-    {
-      text: "Offline Class",
-      icon: <SchoolIcon />,
-      path: "/dashboard/class-admin",
-    },
-    {
-      text: "Teacher Management",
-      icon: <Groups2Icon />,
-      path: "/dashboard/teacher-management",
-    },
-    {
-      text: "Parents Management",
-      icon: <Groups2Icon />,
-      path: "/dashboard/parents-table",
-    },
+    // {
+    //   text: "Teachers List",
+    //   icon: <PersonIcon />,
+    //   path: "/dashboard/teachers-list",
+    // },
+    // {
+    //   text: "Student Data",
+    //   icon: <Face3Icon />,
+    //   path: "/dashboard/student-data",
+    // },
+    // {
+    //   text: "Tuition Dashboard",
+    //   icon: <ApartmentIcon />,
+    //   path: "/dashboard/tuition-dashboard",
+    // },
+    // {
+    //   text: "Toppers List",
+    //   icon: <Person4Icon />,
+    //   path: "/dashboard/toppers-list",
+    // },
+    // {
+    //   text: "Blog",
+    //   icon: <PagesIcon />,
+    //   path: "/dashboard/category-management",
+    // },
+    // {
+    //   text: "Offline Class",
+    //   icon: <SchoolIcon />,
+    //   path: "/dashboard/class-admin",
+    // },
+    // {
+    //   text: "Teacher Management",
+    //   icon: <Groups2Icon />,
+    //   path: "/dashboard/teacher-management",
+    // },
+    // {
+    //   text: "Parents Management",
+    //   icon: <Groups2Icon />,
+    //   path: "/dashboard/parents-table",
+    // },
     // {
     //   text: "Student Analytics",
     //   icon: <Groups2Icon />,

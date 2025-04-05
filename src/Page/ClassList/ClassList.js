@@ -271,15 +271,7 @@ const ClassList = () => {
               <TableCell align="center">
                 <b>View Batches</b>
               </TableCell>
-              <TableCell align="center">
-                <b>View Tests</b>
-              </TableCell>
-              <TableCell align="center">
-                <b>View Books</b>
-              </TableCell>
-              <TableCell align="center">
-                <b>View Material</b>
-              </TableCell>
+
             </TableRow>
           </TableHead>
           <TableBody>
@@ -307,21 +299,6 @@ const ClassList = () => {
                   </TableCell>
                   <TableCell align="center">
                     <IconButton color="tertiary" onClick={()=>navigate(`/dashboard/batch-list/${cls._id}`)}>
-                      <VisibilityIcon />
-                    </IconButton>
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton color="tertiary" onClick={()=>navigate(`/dashboard/test-subjects-list/${cls._id}`)}>
-                      <VisibilityIcon />
-                    </IconButton>
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton color="tertiary" onClick={()=>navigate(`/dashboard/book-list/${cls._id}`)}>
-                      <VisibilityIcon />
-                    </IconButton>
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton color="tertiary" onClick={()=>navigate(`/dashboard/material-title/${cls._id}`)}>
                       <VisibilityIcon />
                     </IconButton>
                   </TableCell>

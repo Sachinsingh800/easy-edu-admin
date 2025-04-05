@@ -234,7 +234,7 @@ const BatchList = () => {
       renderCell: (params) => (
         <IconButton
           color="secondary"
-          onClick={() => navigate(`/dashboard/batch-details/${id}/${params.row._id}`)}
+          onClick={() => navigate(`/dashboard/batch-subjects/${id}/${params.row._id}`)}
         >
           <VisibilityIcon />
         </IconButton>

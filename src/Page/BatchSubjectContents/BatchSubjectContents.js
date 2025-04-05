@@ -152,13 +152,12 @@ const BatchSubjectContents = () => {
     <Card sx={{ height: '100%', width:"100%", display: 'flex', flexDirection: 'column', boxShadow: 3 }}>
       <CardMedia
         component="img"
-        height="200"
+         height={300}
         image={content.thumbnailImg.url}
         alt={content.title}
-        sx={{ objectFit: 'cover' }}
       />
       <CardContent sx={{ flexGrow: 1 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} >
           <Typography variant="h6" component="div">
             {content.title}
           </Typography>
@@ -169,7 +168,7 @@ const BatchSubjectContents = () => {
           />
         </Stack>
         
-        <Stack spacing={1} mb={2}>
+        <Stack spacing={1} mb={2} >
           <Typography variant="body2" color="text.secondary">
             Duration: {content.duration}
           </Typography>
@@ -255,9 +254,9 @@ const BatchSubjectContents = () => {
       {loading ? (
         <LinearProgress />
       ) : (
-        <Grid container spacing={3}>
+        <Grid  spacing={3}>
           {contents.map((content) => (
-            <Grid item key={content._id} xs={12} sm={6} md={4} lg={3}>
+            <Grid item key={content._id}  style={{width:"50%"}}>
               <ContentCard content={content} />
             </Grid>
           ))}

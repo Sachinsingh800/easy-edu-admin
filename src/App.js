@@ -40,6 +40,7 @@ import ParentsTable from "./Page/Offline/ParentsTable/ParentsTable";
 import ParentAccessManagement from "./Page/Offline/ParentAccessManagement/ParentAccessManagement";
 import StudentHierarchy from "./Page/Offline/StudentHierarchy/StudentHierarchy";
 import BatchSubjectsGrid from "./Page/BatchSubjectsGrid/BatchSubjectsGrid";
+import BatchSubjectContents from "./Page/BatchSubjectContents/BatchSubjectContents";
 
 const App = () => {
   return (
@@ -56,6 +57,7 @@ const App = () => {
           <Route index element={<DashboardHome />} />
           <Route path="class-list" element={<ClassList />} />
           <Route path="batch-subjects/:id/:batchId" element={<BatchSubjectsGrid  />} />
+          <Route path="batch-subject-contents/:batchId/:subjectId" element={<BatchSubjectContents  />} />
           <Route path="batch-list/:id" element={<BatchList />} />
           <Route path="subjects-list" element={<SubjectsList />} />
           <Route path="teachers-list" element={<TeachersList />} />

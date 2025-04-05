@@ -4,9 +4,6 @@ import Cookies from "js-cookie";
 import {
   DataGrid,
   GridActionsCellItem,
-  GridToolbarContainer,
-  GridToolbarExport,
-  GridToolbarFilterButton,
 } from "@mui/x-data-grid";
 import {
   LinearProgress,
@@ -28,12 +25,13 @@ import {
   Snackbar,
   Alert
 } from "@mui/material";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { 
   Add as AddIcon, 
   Search as SearchIcon, 
   Edit as EditIcon 
 } from "@mui/icons-material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 const BatchSubjectsGrid = () => {
   const [rows, setRows] = useState([]);
@@ -48,6 +46,7 @@ const BatchSubjectsGrid = () => {
   const [currentBatchSubjectId, setCurrentBatchSubjectId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { id, batchId } = useParams();
+  const navigate = useNavigate()
 
   const columns = [
     { field: "subjectName", headerName: "Subject Name", width: 200 },
@@ -77,6 +76,21 @@ const BatchSubjectsGrid = () => {
             setOpenEditDialog(true);
             setError(null);
             fetchAllSubjects();
+          }}
+        />,
+      ],
+    },
+    {
+      field: "view",
+      type: "actions",
+      headerName: "view",
+      width: 100,
+      getActions: (params) => [
+        <GridActionsCellItem
+          icon={<VisibilityIcon />}
+          label="Edit"
+          onClick={() => {
+            navigate(`/dashboard/batch-subject-contents/${params.row.batchId}/${params.row._id}`)
           }}
         />,
       ],

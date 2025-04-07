@@ -42,6 +42,8 @@ import StudentHierarchy from "./Page/Offline/StudentHierarchy/StudentHierarchy";
 import BatchSubjectsGrid from "./Page/BatchSubjectsGrid/BatchSubjectsGrid";
 import BatchSubjectContents from "./Page/BatchSubjectContents/BatchSubjectContents";
 import CategoryManagementGrid from "./Page/CategoryManagementGrid/CategoryManagementGrid";
+import CourseGrid from "./Page/CourseGrid/CourseGrid";
+import LectureManagement from "./Page/LectureManagement/LectureManagement";
 
 const App = () => {
   return (
@@ -60,6 +62,8 @@ const App = () => {
           <Route path="batch-subjects/:id/:batchId" element={<BatchSubjectsGrid  />} />
           <Route path="batch-subject-contents/:batchId/:subjectId" element={<BatchSubjectContents  />} />
           <Route path="category-management" element={<CategoryManagementGrid  />} />
+          <Route path="course-grid/:catId" element={<CourseGrid  />} />
+          <Route path="lecture-management/:courseId" element={<LectureManagement  />} />
           <Route path="batch-list/:id" element={<BatchList />} />
           <Route path="subjects-list" element={<SubjectsList />} />
           <Route path="teachers-list" element={<TeachersList />} />

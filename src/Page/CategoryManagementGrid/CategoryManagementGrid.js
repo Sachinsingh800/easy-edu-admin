@@ -25,6 +25,8 @@ import {
   Stack,
 } from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { useNavigate } from "react-router-dom";
 
 const CategoryManagementGrid = () => {
   const [categories, setCategories] = useState([]);
@@ -37,6 +39,8 @@ const CategoryManagementGrid = () => {
     catName: "",
     description: "",
   });
+  const navigate = useNavigate();
+
 
   const fetchCategories = async () => {
     try {
@@ -68,7 +72,7 @@ const CategoryManagementGrid = () => {
       const method = editingCategory ? "put" : "post";
 
       await axios[method](url, formData, {
-        headers: { "x-admin-token": token }
+        headers: { "x-admin-token": token },
       });
 
       await fetchCategories();
@@ -163,6 +167,16 @@ const CategoryManagementGrid = () => {
                       >
                         <Delete color="error" />
                       </IconButton>
+                      <IconButton
+                        aria-label="view"
+                        onClick={() => {
+                          navigate(
+                            `/dashboard/course-grid/${category._id}`
+                          );
+                        }}
+                      >
+                        <VisibilityIcon color="secondary" />
+                      </IconButton>
                     </Stack>
                   </TableCell>
                 </TableRow>
@@ -172,7 +186,12 @@ const CategoryManagementGrid = () => {
         </TableContainer>
       )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>
           {editingCategory ? "Edit Category" : "Create New Category"}
         </DialogTitle>
@@ -210,13 +229,13 @@ const CategoryManagementGrid = () => {
               isSubmitting && <CircularProgress size={20} color="inherit" />
             }
           >
-            {isSubmitting 
-              ? editingCategory 
-                ? "Updating..." 
+            {isSubmitting
+              ? editingCategory
+                ? "Updating..."
                 : "Creating..."
               : editingCategory
-                ? "Update"
-                : "Create"}
+              ? "Update"
+              : "Create"}
           </Button>
         </DialogActions>
       </Dialog>

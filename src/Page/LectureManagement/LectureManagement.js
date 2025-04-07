@@ -16,11 +16,15 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   FormControlLabel,
   Checkbox,
   Grid,
   IconButton,
+  InputLabel,
   LinearProgress,
+  MenuItem,
+  Select,
   Snackbar,
   Stack,
   TextField,
@@ -42,6 +46,7 @@ const LectureManagement = () => {
     title: "",
     description: "",
     part: 1,
+    contentType: "Lecture",
     isFreeContent: false,
     duration: "",
     videoUrl: "",
@@ -92,17 +97,20 @@ const LectureManagement = () => {
       const token = Cookies.get("token");
       const formDataToSend = new FormData();
 
-      // Append basic fields
       formDataToSend.append("title", formData.title);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("part", formData.part);
+      formDataToSend.append("contentType", formData.contentType);
       formDataToSend.append("isFreeContent", formData.isFreeContent);
-      formDataToSend.append("duration", formData.duration);
-      formDataToSend.append("videoUrl", formData.videoUrl);
+      
+      if(formData.contentType === "Lecture") {
+        formDataToSend.append("duration", formData.duration);
+        formDataToSend.append("videoUrl", formData.videoUrl);
+      }
+
       formDataToSend.append("practiceSetTitle", formData.practiceSetTitle);
       formDataToSend.append("practiceSetDescription", formData.practiceSetDescription);
 
-      // Handle files
       if (formData.thumbnailImg instanceof File) {
         formDataToSend.append("thumbnailImg", formData.thumbnailImg);
       }
@@ -154,6 +162,7 @@ const LectureManagement = () => {
       title: "",
       description: "",
       part: 1,
+      contentType: "Lecture",
       isFreeContent: false,
       duration: "",
       videoUrl: "",
@@ -170,8 +179,9 @@ const LectureManagement = () => {
       title: lecture.title,
       description: lecture.description || "",
       part: lecture.part,
+      contentType: lecture.contentType || "Lecture",
       isFreeContent: lecture.isFreeContent,
-      duration: lecture.duration,
+      duration: lecture.duration || "",
       videoUrl: lecture.videoUrl || "",
       practiceSetTitle: lecture.practiceSet?.title || "",
       practiceSetDescription: lecture.practiceSet?.description || "",
@@ -210,19 +220,38 @@ const LectureManagement = () => {
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Stack direction="row" justifyContent="space-between" mb={2}>
                     <Typography variant="h6">{lecture.title}</Typography>
-                    <Chip
-                      label={`Part ${lecture.part}`}
-                      color="primary"
-                      size="small"
-                    />
+                    <Stack direction="row" spacing={1}>
+                      <Chip
+                        label={`Part ${lecture.part}`}
+                        color="primary"
+                        size="small"
+                      />
+                      <Chip
+                        label={lecture.contentType}
+                        color={lecture.contentType === "Live" ? "warning" : "primary"}
+                        size="small"
+                      />
+                    </Stack>
                   </Stack>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     {lecture.description}
                   </Typography>
                   <Stack spacing={1} mt={2}>
-                    <Typography variant="caption">
-                      Duration: {lecture.duration}
-                    </Typography>
+                    {lecture.contentType === "Lecture" && (
+                      <>
+                        <Typography variant="caption">
+                          Duration: {lecture.duration}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          href={lecture.videoUrl}
+                          target="_blank"
+                          startIcon={<PlayCircle />}
+                        >
+                          Watch Lecture
+                        </Button>
+                      </>
+                    )}
                     <Chip
                       label={lecture.isFreeContent ? "Free" : "Premium"}
                       color={lecture.isFreeContent ? "success" : "secondary"}
@@ -242,14 +271,6 @@ const LectureManagement = () => {
                   </Stack>
                 </CardContent>
                 <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-                  <Button
-                    variant="contained"
-                    href={lecture.videoUrl}
-                    target="_blank"
-                    startIcon={<PlayCircle />}
-                  >
-                    Watch
-                  </Button>
                   <Stack direction="row" spacing={1}>
                     <IconButton onClick={() => handleEditClick(lecture)}>
                       <Edit color="primary" />
@@ -272,6 +293,23 @@ const LectureManagement = () => {
         <DialogContent dividers>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Content Type</InputLabel>
+                <Select
+                  value={formData.contentType}
+                  label="Content Type"
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    contentType: e.target.value,
+                    duration: e.target.value === "Live" ? "" : formData.duration,
+                    videoUrl: e.target.value === "Live" ? "" : formData.videoUrl
+                  })}
+                >
+                  <MenuItem value="Lecture">Lecture</MenuItem>
+                  <MenuItem value="Live">Live Session</MenuItem>
+                </Select>
+              </FormControl>
+
               <TextField
                 fullWidth
                 label="Title"
@@ -280,6 +318,7 @@ const LectureManagement = () => {
                 margin="normal"
                 required
               />
+              
               <TextField
                 fullWidth
                 label="Description"
@@ -289,6 +328,7 @@ const LectureManagement = () => {
                 multiline
                 rows={3}
               />
+
               <TextField
                 fullWidth
                 label="Part Number"
@@ -298,22 +338,28 @@ const LectureManagement = () => {
                 margin="normal"
                 required
               />
-              <TextField
-                fullWidth
-                label="Duration (HH:MM:SS)"
-                value={formData.duration}
-                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                margin="normal"
-                required
-              />
-              <TextField
-                fullWidth
-                label="Video URL"
-                value={formData.videoUrl}
-                onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                margin="normal"
-                required
-              />
+
+              {formData.contentType === "Lecture" && (
+                <>
+                  <TextField
+                    fullWidth
+                    label="Duration (HH:MM:SS)"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    margin="normal"
+                    required
+                  />
+                  <TextField
+                    fullWidth
+                    label="Video URL"
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    margin="normal"
+                    required
+                  />
+                </>
+              )}
+
               <FormControlLabel
                 control={
                   <Checkbox

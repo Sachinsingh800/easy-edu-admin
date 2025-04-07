@@ -41,6 +41,7 @@ import ParentAccessManagement from "./Page/Offline/ParentAccessManagement/Parent
 import StudentHierarchy from "./Page/Offline/StudentHierarchy/StudentHierarchy";
 import BatchSubjectsGrid from "./Page/BatchSubjectsGrid/BatchSubjectsGrid";
 import BatchSubjectContents from "./Page/BatchSubjectContents/BatchSubjectContents";
+import CategoryManagementGrid from "./Page/CategoryManagementGrid/CategoryManagementGrid";
 
 const App = () => {
   return (
@@ -58,6 +59,7 @@ const App = () => {
           <Route path="class-list" element={<ClassList />} />
           <Route path="batch-subjects/:id/:batchId" element={<BatchSubjectsGrid  />} />
           <Route path="batch-subject-contents/:batchId/:subjectId" element={<BatchSubjectContents  />} />
+          <Route path="category-management" element={<CategoryManagementGrid  />} />
           <Route path="batch-list/:id" element={<BatchList />} />
           <Route path="subjects-list" element={<SubjectsList />} />
           <Route path="teachers-list" element={<TeachersList />} />
@@ -83,7 +85,6 @@ const App = () => {
           <Route path="student-data" element={<StudentDataGrid />} />
           <Route path="tuition-dashboard" element={<TuitionDashboard  />} />
           <Route path="toppers-list" element={<ToppersList />} />
-          <Route path="category-management" element={<CategoryManagement />} />
         <Route path="blogs/:categoryId" element={<BlogEditor />} />
         <Route path="blog-list/:categoryId" element={<BlogList />} />
         <Route path="blog/:link" element={<BlogDetail />} />

@@ -27,7 +27,14 @@ import {
   IconButton,
   Stack,
 } from "@mui/material";
-import { Add, Edit, CloudUpload, PlayCircle, PictureAsPdf } from "@mui/icons-material";
+import {
+  Add,
+  Edit,
+  CloudUpload,
+  PlayCircle,
+  PictureAsPdf,
+  Delete
+} from "@mui/icons-material";
 
 const BatchSubjectContents = () => {
   const { batchId, subjectId } = useParams();
@@ -75,7 +82,7 @@ const BatchSubjectContents = () => {
     onDrop: (acceptedFiles) => {
       const file = acceptedFiles[0];
       if (file) {
-        setFormData(prev => ({ ...prev, thumbnailImg: file }));
+        setFormData((prev) => ({ ...prev, thumbnailImg: file }));
       }
     },
   });
@@ -83,7 +90,7 @@ const BatchSubjectContents = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData(prev => ({ ...prev, practicePdf: file }));
+      setFormData((prev) => ({ ...prev, practicePdf: file }));
     }
   };
 
@@ -100,7 +107,10 @@ const BatchSubjectContents = () => {
       formDataToSend.append("videoUrl", formData.videoUrl);
       formDataToSend.append("isFreeContent", formData.isFreeContent);
       formDataToSend.append("practiceSetTitle", formData.practiceSetTitle);
-      formDataToSend.append("practiceSetDescription", formData.practiceSetDescription);
+      formDataToSend.append(
+        "practiceSetDescription",
+        formData.practiceSetDescription
+      );
 
       // Handle files
       if (formData.thumbnailImg instanceof File) {
@@ -117,10 +127,10 @@ const BatchSubjectContents = () => {
       const method = editingContent ? "put" : "post";
 
       await axios[method](url, formDataToSend, {
-        headers: { 
+        headers: {
           "x-admin-token": token,
-          "Content-Type": "multipart/form-data"
-        }
+          "Content-Type": "multipart/form-data",
+        },
       });
 
       await fetchContents();
@@ -148,27 +158,51 @@ const BatchSubjectContents = () => {
     });
   };
 
+  const handleDelete = async (contentId) => {
+    if (window.confirm("Are you sure you want to delete this content?")) {
+      try {
+        const token = Cookies.get("token");
+        await axios.delete(
+          `https://lmsapp-plvj.onrender.com/admin/allClass/subjects/contents/delete/${contentId}`,
+          { headers: { "x-admin-token": token } }
+        );
+        await fetchContents(); // Refresh the list
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to delete content");
+      }
+    }
+  };
+
   const ContentCard = ({ content }) => (
-    <Card sx={{ height: '100%', width:"100%", display: 'flex', flexDirection: 'column', boxShadow: 3 }}>
+    <Card
+      sx={{
+        height: "100%",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: 3,
+      }}
+    >
       <CardMedia
         component="img"
-         height={300}
+        height={300}
         image={content.thumbnailImg.url}
         alt={content.title}
       />
       <CardContent sx={{ flexGrow: 1 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} >
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography variant="h6" component="div">
             {content.title}
           </Typography>
-          <Chip 
-            label={`Part ${content.part}`} 
-            color="primary" 
-            size="small"
-          />
+          <Chip label={`Part ${content.part}`} color="primary" size="small" />
         </Stack>
-        
-        <Stack spacing={1} mb={2} >
+
+        <Stack spacing={1} mb={2}>
           <Typography variant="body2" color="text.secondary">
             Duration: {content.duration}
           </Typography>
@@ -205,7 +239,7 @@ const BatchSubjectContents = () => {
           </div>
         )}
       </CardContent>
-      <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
+      <CardActions sx={{ justifyContent: "space-between", p: 2 }}>
         <Button
           variant="contained"
           startIcon={<PlayCircle />}
@@ -216,7 +250,7 @@ const BatchSubjectContents = () => {
         >
           Watch Video
         </Button>
-        <IconButton 
+        <IconButton
           aria-label="edit"
           onClick={() => {
             setEditingContent(content);
@@ -236,6 +270,12 @@ const BatchSubjectContents = () => {
         >
           <Edit />
         </IconButton>
+        <IconButton
+          aria-label="delete"
+          onClick={() => handleDelete(content._id)}
+        >
+          <Delete />
+        </IconButton>
       </CardActions>
     </Card>
   );
@@ -254,17 +294,22 @@ const BatchSubjectContents = () => {
       {loading ? (
         <LinearProgress />
       ) : (
-        <Grid  spacing={3}>
+        <Grid spacing={3}>
           {contents.map((content) => (
-            <Grid item key={content._id}  style={{width:"50%"}}>
+            <Grid item key={content._id} style={{ width: "50%" }}>
               <ContentCard content={content} />
             </Grid>
           ))}
         </Grid>
       )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ borderBottom: '1px solid #eee', pb: 2 }}>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ borderBottom: "1px solid #eee", pb: 2 }}>
           {editingContent ? "Edit Content" : "Create New Content"}
         </DialogTitle>
         <DialogContent dividers sx={{ pt: 3 }}>
@@ -275,16 +320,20 @@ const BatchSubjectContents = () => {
                 fullWidth
                 margin="normal"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
               />
-              
+
               <TextField
                 label="Part"
                 type="number"
                 fullWidth
                 margin="normal"
                 value={formData.part}
-                onChange={(e) => setFormData({ ...formData, part: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, part: e.target.value })
+                }
               />
 
               <TextField
@@ -292,7 +341,9 @@ const BatchSubjectContents = () => {
                 fullWidth
                 margin="normal"
                 value={formData.duration}
-                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, duration: e.target.value })
+                }
               />
 
               <TextField
@@ -300,14 +351,21 @@ const BatchSubjectContents = () => {
                 fullWidth
                 margin="normal"
                 value={formData.videoUrl}
-                onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, videoUrl: e.target.value })
+                }
               />
 
               <FormControlLabel
                 control={
                   <Checkbox
                     checked={formData.isFreeContent}
-                    onChange={(e) => setFormData({ ...formData, isFreeContent: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        isFreeContent: e.target.checked,
+                      })
+                    }
                   />
                 }
                 label="Free Content"
@@ -324,7 +382,11 @@ const BatchSubjectContents = () => {
                     <img
                       src={formData.thumbnailImg}
                       alt="Thumbnail"
-                      style={{ maxWidth: "100%", maxHeight: 200, marginTop: 10 }}
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: 200,
+                        marginTop: 10,
+                      }}
                     />
                   ) : (
                     <Typography variant="body2" sx={{ mt: 1 }}>
@@ -343,7 +405,9 @@ const BatchSubjectContents = () => {
                 fullWidth
                 margin="normal"
                 value={formData.practiceSetTitle}
-                onChange={(e) => setFormData({ ...formData, practiceSetTitle: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, practiceSetTitle: e.target.value })
+                }
               />
 
               <TextField
@@ -353,7 +417,12 @@ const BatchSubjectContents = () => {
                 multiline
                 rows={3}
                 value={formData.practiceSetDescription}
-                onChange={(e) => setFormData({ ...formData, practiceSetDescription: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    practiceSetDescription: e.target.value,
+                  })
+                }
               />
 
               <div style={{ margin: "16px 0" }}>
@@ -377,7 +446,11 @@ const BatchSubjectContents = () => {
                 {formData.practicePdf && (
                   <Typography variant="body2" sx={{ mt: 1 }}>
                     {typeof formData.practicePdf === "string" ? (
-                      <Link href={formData.practicePdf} target="_blank" rel="noopener">
+                      <Link
+                        href={formData.practicePdf}
+                        target="_blank"
+                        rel="noopener"
+                      >
                         View existing PDF
                       </Link>
                     ) : (
@@ -389,11 +462,13 @@ const BatchSubjectContents = () => {
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid #eee', p: 2 }}>
-          <Button onClick={handleCloseDialog} variant="outlined">Cancel</Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained" 
+        <DialogActions sx={{ borderTop: "1px solid #eee", p: 2 }}>
+          <Button onClick={handleCloseDialog} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
             disabled={isUploading}
             startIcon={isUploading ? <CircularProgress size={20} /> : null}
           >
@@ -408,7 +483,9 @@ const BatchSubjectContents = () => {
         onClose={() => setError(null)}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert severity="error" sx={{ width: '100%' }}>{error}</Alert>
+        <Alert severity="error" sx={{ width: "100%" }}>
+          {error}
+        </Alert>
       </Snackbar>
     </div>
   );
@@ -421,10 +498,10 @@ const dropzoneStyle = {
   textAlign: "center",
   margin: "16px 0",
   cursor: "pointer",
-  transition: 'border-color 0.3s',
-  '&:hover': {
-    borderColor: '#1976d2',
-  }
+  transition: "border-color 0.3s",
+  "&:hover": {
+    borderColor: "#1976d2",
+  },
 };
 
 export default BatchSubjectContents;

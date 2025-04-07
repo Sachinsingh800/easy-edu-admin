@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
 import {
   Box,
@@ -31,7 +31,14 @@ import {
   Typography,
   Alert,
 } from "@mui/material";
-import { Add, Edit, Delete, CloudUpload, PictureAsPdf, PlayCircle } from "@mui/icons-material";
+import {
+  Add,
+  Edit,
+  Delete,
+  CloudUpload,
+  PictureAsPdf,
+  PlayCircle,
+} from "@mui/icons-material";
 
 const LectureManagement = () => {
   const { courseId } = useParams();
@@ -41,6 +48,7 @@ const LectureManagement = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingLecture, setEditingLecture] = useState(null);
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -56,21 +64,31 @@ const LectureManagement = () => {
     practicePdf: null,
   });
 
-  const { getRootProps: getThumbnailProps, getInputProps: getThumbnailInputProps } = useDropzone({
+  const {
+    getRootProps: getThumbnailProps,
+    getInputProps: getThumbnailInputProps,
+  } = useDropzone({
     accept: { "image/*": [".jpeg", ".jpg", ".png"] },
     multiple: false,
     onDrop: (acceptedFiles) => {
-      setFormData(prev => ({ ...prev, thumbnailImg: acceptedFiles[0] }));
+      setFormData((prev) => ({ ...prev, thumbnailImg: acceptedFiles[0] }));
     },
   });
 
-  const { getRootProps: getPdfProps, getInputProps: getPdfInputProps } = useDropzone({
-    accept: { "application/pdf": [".pdf"] },
-    multiple: false,
-    onDrop: (acceptedFiles) => {
-      setFormData(prev => ({ ...prev, practicePdf: acceptedFiles[0] }));
-    },
-  });
+  const { getRootProps: getPdfProps, getInputProps: getPdfInputProps } =
+    useDropzone({
+      accept: { "application/pdf": [".pdf"] },
+      multiple: false,
+      onDrop: (acceptedFiles) => {
+        setFormData((prev) => ({ ...prev, practicePdf: acceptedFiles[0] }));
+      },
+    });
+
+  const handleGoLive = (lecture) => {
+    if (lecture.contentType === "Live") {
+      navigate(`/live-session/${lecture.liveDetails.channelName}`);
+    }
+  };
 
   const fetchLectures = async () => {
     try {
@@ -102,14 +120,17 @@ const LectureManagement = () => {
       formDataToSend.append("part", formData.part);
       formDataToSend.append("contentType", formData.contentType);
       formDataToSend.append("isFreeContent", formData.isFreeContent);
-      
-      if(formData.contentType === "Lecture") {
+
+      if (formData.contentType === "Lecture") {
         formDataToSend.append("duration", formData.duration);
         formDataToSend.append("videoUrl", formData.videoUrl);
       }
 
       formDataToSend.append("practiceSetTitle", formData.practiceSetTitle);
-      formDataToSend.append("practiceSetDescription", formData.practiceSetDescription);
+      formDataToSend.append(
+        "practiceSetDescription",
+        formData.practiceSetDescription
+      );
 
       if (formData.thumbnailImg instanceof File) {
         formDataToSend.append("thumbnailImg", formData.thumbnailImg);
@@ -125,10 +146,10 @@ const LectureManagement = () => {
       const method = editingLecture ? "put" : "post";
 
       await axios[method](url, formDataToSend, {
-        headers: { 
+        headers: {
           "x-admin-token": token,
-          "Content-Type": "multipart/form-data"
-        }
+          "Content-Type": "multipart/form-data",
+        },
       });
 
       await fetchLectures();
@@ -210,7 +231,13 @@ const LectureManagement = () => {
         <Grid container spacing={3}>
           {lectures.map((lecture) => (
             <Grid item xs={12} sm={6} md={4} key={lecture._id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Card
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
                 <CardMedia
                   component="img"
                   height="200"
@@ -228,12 +255,18 @@ const LectureManagement = () => {
                       />
                       <Chip
                         label={lecture.contentType}
-                        color={lecture.contentType === "Live" ? "warning" : "primary"}
+                        color={
+                          lecture.contentType === "Live" ? "warning" : "primary"
+                        }
                         size="small"
                       />
                     </Stack>
                   </Stack>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
                     {lecture.description}
                   </Typography>
                   <Stack spacing={1} mt={2}>
@@ -270,8 +303,17 @@ const LectureManagement = () => {
                     )}
                   </Stack>
                 </CardContent>
-                <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
+                <CardActions sx={{ justifyContent: "space-between", p: 2 }}>
                   <Stack direction="row" spacing={1}>
+                    {lecture.contentType === "Live" && (
+                      <Button
+                        variant="contained"
+                        color="success"
+                        onClick={() => handleGoLive(lecture)}
+                      >
+                        Go Live
+                      </Button>
+                    )}
                     <IconButton onClick={() => handleEditClick(lecture)}>
                       <Edit color="primary" />
                     </IconButton>
@@ -286,7 +328,12 @@ const LectureManagement = () => {
         </Grid>
       )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
           {editingLecture ? "Edit Lecture" : "Create New Lecture"}
         </DialogTitle>
@@ -298,12 +345,16 @@ const LectureManagement = () => {
                 <Select
                   value={formData.contentType}
                   label="Content Type"
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    contentType: e.target.value,
-                    duration: e.target.value === "Live" ? "" : formData.duration,
-                    videoUrl: e.target.value === "Live" ? "" : formData.videoUrl
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      contentType: e.target.value,
+                      duration:
+                        e.target.value === "Live" ? "" : formData.duration,
+                      videoUrl:
+                        e.target.value === "Live" ? "" : formData.videoUrl,
+                    })
+                  }
                 >
                   <MenuItem value="Lecture">Lecture</MenuItem>
                   <MenuItem value="Live">Live Session</MenuItem>
@@ -314,16 +365,20 @@ const LectureManagement = () => {
                 fullWidth
                 label="Title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 margin="normal"
                 required
               />
-              
+
               <TextField
                 fullWidth
                 label="Description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 margin="normal"
                 multiline
                 rows={3}
@@ -334,7 +389,9 @@ const LectureManagement = () => {
                 label="Part Number"
                 type="number"
                 value={formData.part}
-                onChange={(e) => setFormData({ ...formData, part: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, part: e.target.value })
+                }
                 margin="normal"
                 required
               />
@@ -345,7 +402,9 @@ const LectureManagement = () => {
                     fullWidth
                     label="Duration (HH:MM:SS)"
                     value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, duration: e.target.value })
+                    }
                     margin="normal"
                     required
                   />
@@ -353,7 +412,9 @@ const LectureManagement = () => {
                     fullWidth
                     label="Video URL"
                     value={formData.videoUrl}
-                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, videoUrl: e.target.value })
+                    }
                     margin="normal"
                     required
                   />
@@ -364,7 +425,12 @@ const LectureManagement = () => {
                 control={
                   <Checkbox
                     checked={formData.isFreeContent}
-                    onChange={(e) => setFormData({ ...formData, isFreeContent: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        isFreeContent: e.target.checked,
+                      })
+                    }
                   />
                 }
                 label="Free Content"
@@ -380,7 +446,11 @@ const LectureManagement = () => {
                     <img
                       src={formData.thumbnailImg}
                       alt="Thumbnail"
-                      style={{ maxWidth: "100%", maxHeight: 200, marginTop: 10 }}
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: 200,
+                        marginTop: 10,
+                      }}
                     />
                   ) : (
                     <Typography variant="body2" sx={{ mt: 1 }}>
@@ -394,24 +464,33 @@ const LectureManagement = () => {
                 )}
               </div>
 
-              <Typography variant="h6" sx={{ mt: 2 }}>Practice Set</Typography>
+              <Typography variant="h6" sx={{ mt: 2 }}>
+                Practice Set
+              </Typography>
               <TextField
                 fullWidth
                 label="Practice Set Title"
                 value={formData.practiceSetTitle}
-                onChange={(e) => setFormData({ ...formData, practiceSetTitle: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, practiceSetTitle: e.target.value })
+                }
                 margin="normal"
               />
               <TextField
                 fullWidth
                 label="Practice Set Description"
                 value={formData.practiceSetDescription}
-                onChange={(e) => setFormData({ ...formData, practiceSetDescription: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    practiceSetDescription: e.target.value,
+                  })
+                }
                 margin="normal"
                 multiline
                 rows={3}
               />
-              
+
               <div {...getPdfProps()} style={dropzoneStyle}>
                 <input {...getPdfInputProps()} />
                 <CloudUpload fontSize="large" color="action" />
@@ -446,7 +525,11 @@ const LectureManagement = () => {
             disabled={isSubmitting}
             startIcon={isSubmitting && <CircularProgress size={20} />}
           >
-            {isSubmitting ? (editingLecture ? "Saving..." : "Creating...") : "Save"}
+            {isSubmitting
+              ? editingLecture
+                ? "Saving..."
+                : "Creating..."
+              : "Save"}
           </Button>
         </DialogActions>
       </Dialog>

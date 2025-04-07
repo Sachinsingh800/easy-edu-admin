@@ -21,8 +21,10 @@ import {
   TextField,
   Typography,
   Alert,
+  IconButton,
+  Stack,
 } from "@mui/material";
-import { Add } from "@mui/icons-material";
+import { Add, Edit, Delete } from "@mui/icons-material";
 
 const CategoryManagementGrid = () => {
   const [categories, setCategories] = useState([]);
@@ -30,6 +32,7 @@ const CategoryManagementGrid = () => {
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [formData, setFormData] = useState({
     catName: "",
     description: "",
@@ -54,28 +57,58 @@ const CategoryManagementGrid = () => {
     fetchCategories();
   }, []);
 
-  const handleCreateCategory = async () => {
+  const handleSubmitCategory = async () => {
     try {
       setIsSubmitting(true);
       const token = Cookies.get("token");
-      await axios.post(
-        "https://lmsapp-plvj.onrender.com/admin/course/category/create",
-        formData,
-        { headers: { "x-admin-token": token } }
-      );
+      const url = editingCategory
+        ? `https://lmsapp-plvj.onrender.com/admin/course/category/update/${editingCategory._id}`
+        : "https://lmsapp-plvj.onrender.com/admin/course/category/create";
+
+      const method = editingCategory ? "put" : "post";
+
+      await axios[method](url, formData, {
+        headers: { "x-admin-token": token }
+      });
+
       await fetchCategories();
       handleCloseDialog();
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create category");
+      setError(err.response?.data?.message || "Operation failed");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleDeleteCategory = async (categoryId) => {
+    if (window.confirm("Are you sure you want to delete this category?")) {
+      try {
+        const token = Cookies.get("token");
+        await axios.delete(
+          `https://lmsapp-plvj.onrender.com/admin/course/category/delete/${categoryId}`,
+          { headers: { "x-admin-token": token } }
+        );
+        await fetchCategories();
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to delete category");
+      }
+    }
+  };
+
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setEditingCategory(null);
     setFormData({ catName: "", description: "" });
+  };
+
+  const handleEditClick = (category) => {
+    setEditingCategory(category);
+    setFormData({
+      catName: category.catName,
+      description: category.description,
+    });
+    setOpenDialog(true);
   };
 
   const handleInputChange = (e) => {
@@ -105,6 +138,7 @@ const CategoryManagementGrid = () => {
                 <TableCell>Category Name</TableCell>
                 <TableCell>Description</TableCell>
                 <TableCell>Created At</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -115,6 +149,22 @@ const CategoryManagementGrid = () => {
                   <TableCell>
                     {new Date(category.createdAt).toLocaleDateString()}
                   </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <IconButton
+                        aria-label="edit"
+                        onClick={() => handleEditClick(category)}
+                      >
+                        <Edit color="primary" />
+                      </IconButton>
+                      <IconButton
+                        aria-label="delete"
+                        onClick={() => handleDeleteCategory(category._id)}
+                      >
+                        <Delete color="error" />
+                      </IconButton>
+                    </Stack>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -123,7 +173,9 @@ const CategoryManagementGrid = () => {
       )}
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Category</DialogTitle>
+        <DialogTitle>
+          {editingCategory ? "Edit Category" : "Create New Category"}
+        </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <TextField
@@ -151,14 +203,20 @@ const CategoryManagementGrid = () => {
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button
-            onClick={handleCreateCategory}
+            onClick={handleSubmitCategory}
             variant="contained"
             disabled={isSubmitting}
             startIcon={
               isSubmitting && <CircularProgress size={20} color="inherit" />
             }
           >
-            {isSubmitting ? "Creating..." : "Create"}
+            {isSubmitting 
+              ? editingCategory 
+                ? "Updating..." 
+                : "Creating..."
+              : editingCategory
+                ? "Update"
+                : "Create"}
           </Button>
         </DialogActions>
       </Dialog>

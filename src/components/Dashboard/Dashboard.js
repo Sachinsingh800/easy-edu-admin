@@ -10,6 +10,7 @@ import {
   AppBar,
   useMediaQuery,
   useTheme,
+  Avatar,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -44,6 +45,7 @@ const Dashboard = () => {
   const logout = () => {
     // Clear token and session data, navigate to login page
     Cookies.remove("token");
+    Cookies.remove("role");
     localStorage.removeItem("token");
     navigate("/login", { replace: true });
   };
@@ -107,24 +109,38 @@ const Dashboard = () => {
             </Box>
           )}
 
-          <Button
-            color="inherit"
-            onClick={logout}
-            startIcon={<LogoutIcon />}
+          <Box
             sx={{
-              backgroundColor: "#ff5f57", // Soft red for logout
-              borderRadius: "8px",
-              textTransform: "none",
-              fontWeight: 600,
-              "&:hover": {
-                backgroundColor: "#e04e4b",
-              },
-              padding: "10px 18px",
-              boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)", // Subtle shadow on hover
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "10px 20px", // Adjusted padding for mobile view
+              gap:"10px"
             }}
           >
-            Logout
-          </Button>
+      
+            <Button
+              color="inherit"
+              onClick={logout}
+              startIcon={<LogoutIcon />}
+              sx={{
+                backgroundColor: "#ff5f57", // Soft red for logout
+                borderRadius: "8px",
+                textTransform: "none",
+                fontWeight: 600,
+                "&:hover": {
+                  backgroundColor: "#e04e4b",
+                },
+                padding: "10px 18px",
+                boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)", // Subtle shadow on hover
+              }}
+            >
+              Logout
+            </Button>
+            <Avatar
+             onClick={()=>navigate("/dashboard/admin-profile")}
+            />
+          </Box>
         </Toolbar>
       </AppBar>
 

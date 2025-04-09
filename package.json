@@ -8,6 +8,7 @@
     "@mui/icons-material": "^6.3.0",
     "@mui/material": "^6.3.0",
     "@mui/x-data-grid": "^7.23.3",
+    "agora-rtc-sdk-ng": "^4.23.2",
     "axios": "^1.7.9",
     "chart.js": "^4.4.7",
     "cra-template": "1.2.0",
@@ -22,6 +23,7 @@
     "react-router-dom": "^7.1.1",
     "react-scripts": "5.0.1",
     "recharts": "^2.15.1",
+    "socket.io-client": "^4.8.1",
     "web-vitals": "^4.2.4"
   },
   "scripts": {

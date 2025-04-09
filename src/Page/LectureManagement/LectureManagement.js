@@ -86,7 +86,7 @@ const LectureManagement = () => {
 
   const handleGoLive = (lecture) => {
     if (lecture.contentType === "Live") {
-      navigate(`/live-session/${lecture.liveDetails.channelName}`);
+      navigate(`/live-session/${lecture._id}`);
     }
   };
 

@@ -44,6 +44,8 @@ import BatchSubjectContents from "./Page/BatchSubjectContents/BatchSubjectConten
 import CategoryManagementGrid from "./Page/CategoryManagementGrid/CategoryManagementGrid";
 import CourseGrid from "./Page/CourseGrid/CourseGrid";
 import LectureManagement from "./Page/LectureManagement/LectureManagement";
+import TeacherLiveLecture from "./Page/TeacherLiveLecture.js/TeacherLiveLecture";
+import AdminProfile from "./Page/AdminProfile/AdminProfile";
 
 const App = () => {
   return (
@@ -52,12 +54,14 @@ const App = () => {
         {/* Login Route */}
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/live-session/:lectureId" element={<TeacherLiveLecture />} />
 
         {/* Dashboard Layout Route */}
         <Route path="/dashboard" element={<Dashboard />}>
         <Route path="parents-table" element={<ParentsTable />} />
           {/* Main Dashboard page */}
           <Route index element={<DashboardHome />} />
+          <Route path="admin-profile" element={<AdminProfile />} />
           <Route path="class-list" element={<ClassList />} />
           <Route path="batch-subjects/:id/:batchId" element={<BatchSubjectsGrid  />} />
           <Route path="batch-subject-contents/:batchId/:subjectId" element={<BatchSubjectContents  />} />

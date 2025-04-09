@@ -42,7 +42,7 @@ const Login = () => {
 
       if (response.data.status) {
         Cookies.set("token", response.data.data);
-        navigate("/dashboard");
+        await fetchProfile();
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -57,6 +57,29 @@ const Login = () => {
       }
     } finally {
       setLoading(false); // Stop loading
+    }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const token = Cookies.get("token");
+      const response = await axios.get(
+        "https://lmsapp-plvj.onrender.com/admin/auth/profile",
+        {
+          headers: {
+            "x-admin-token": token,
+          },
+        }
+      );
+
+      if (response.data.status) {
+        localStorage.setItem("profile",JSON.stringify(response.data.data));
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      alert("Failed to fetch profile data");
+    } finally {
+      setLoading(false);
     }
   };
 

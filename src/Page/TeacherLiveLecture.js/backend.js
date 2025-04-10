@@ -1,430 +1,432 @@
-// require("dotenv/config");
+require("dotenv/config");
 
-// const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
-// const app = require("./app");
+const app = require("./app");
 
-// const { createServer } = require("http");
-// const { Server } = require("socket.io");
-// const jwt = require("jsonwebtoken");
-// const courseLectureModel = require("./models/adminModel/adminCourseModel/adminCourseLectureModel");
-// const studentAuhModel = require("./models/studentModel/studentAuthModel");
-// const { generateAgoraToken } = require("./utils/agora");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
+const courseLectureModel = require("./models/adminModel/adminCourseModel/adminCourseLectureModel");
+const studentAuhModel = require("./models/studentModel/studentAuthModel");
+const { generateAgoraToken } = require("./utils/agora");
 
-// const httpServer = createServer(app);
-// // const io = new Server(httpServer, {
-// //   cors: {
-// //     origin: ["*","http://localhost:3000", "https://live-classes.vercel.app"],
-// //     methods: ["GET", "POST"],
-// //     credentials: true,
-// //   },
-// // });
-
+const httpServer = createServer(app);
 // const io = new Server(httpServer, {
 //   cors: {
-//     origin: "*",
+//     origin: ["*","http://localhost:3000", "https://live-classes.vercel.app"],
 //     methods: ["GET", "POST"],
+//     credentials: true,
 //   },
 // });
-// const port = process.env.PORT || 4000;
 
-// mongoose
-//   .connect(process.env.MONGODB_URL_LOCAL, {
-//     useNewUrlParser: true,
-//     useUnifiedTopoLogy: true,
-//   })
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+const port = process.env.PORT || 4000;
 
-//   .then(() => console.log("MongoDB connected successfully"))
-//   .catch((err) => console.log(err.message));
+mongoose
+  .connect(process.env.MONGODB_URL_LOCAL, {
+    useNewUrlParser: true,
+    useUnifiedTopoLogy: true,
+  })
 
-// io.use(async (socket, next) => {
-//   try {
-//     const token = socket.handshake.auth.token;
-//     const userType = socket.handshake.auth.userType;
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch((err) => console.log(err.message));
 
-//     console.log("token: " + token);
-//     console.log("userType: " + userType);
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    const userType = socket.handshake.auth.userType;
 
-//     if (!token || !userType) {
-//       throw new Error("Authentication credentials missing");
-//     }
+    console.log("token: " + token);
+    console.log("userType: " + userType);
 
-//     const secret =
-//       userType === "admin"
-//         ? process.env.JWT_SECRET_KEY_ADMIN
-//         : process.env.JWT_SECRET_KEY_STUDENT;
+    if (!token || !userType) {
+      throw new Error("Authentication credentials missing");
+    }
 
-//     // Verify JWT
-//     const decoded = jwt.verify(token, secret);
+    const secret =
+      userType === "admin"
+        ? process.env.JWT_SECRET_KEY_ADMIN
+        : process.env.JWT_SECRET_KEY_STUDENT;
 
-//     // Check user existence in DB
-//     const user = await studentAuhModel.findById(decoded.id);
-//     if (!user) throw new Error("User not found");
+    // Verify JWT
+    const decoded = jwt.verify(token, secret);
 
-//     // Attach user type specific data
-//     if (userType === "admin") {
-//       socket.admin = {
-//         _id: user._id,
-//         email: user.email,
-//         role: user.role,
-//       };
-//     } else {
-//       socket.user = {
-//         _id: user._id,
-//         email: user.email,
-//         role: user.role,
-//       };
-//     }
+    // Check user existence in DB
+    const user = await studentAuhModel.findById(decoded.id);
+    if (!user) throw new Error("User not found");
 
-//     next();
-//   } catch (error) {
-//     console.error(Socket auth error: ${error.message});
-//     next(new Error("Authentication failed"));
-//   }
-// });
+    // Attach user type specific data
+    if (userType === "admin") {
+      socket.admin = {
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+      };
+    } else {
+      socket.user = {
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+      };
+    }
 
-// io.on("connection", (socket) => {
-//   console.log(
-//     New connection: ${socket.id}, role: ${socket.admin ? "admin" : "user"}
-//   );
+    next();
+  } catch (error) {
+    console.error(Socket auth error: ${error.message});
+    next(new Error("Authentication failed"));
+  }
+});
 
-//   /**
-//    * GO-LIVE SOCKET EVENT (for Admin/Teacher)
-//    *
-//    * Expects the data payload to have:
-//    *  - lectureId: the MongoDB ID for the lecture
-//    *  - isResume: boolean indicating if the session is being resumed or started for the first time
-//    */
-//   socket.on("go-live", async (data) => {
-//     if (!socket.admin) {
-//       console.warn(Unauthorized go-live attempt from socket: ${socket.id});
-//       return socket.emit("go-live-error", "Unauthorized access");
-//     }
+io.on("connection", (socket) => {
+  console.log(
+    New connection: ${socket.id}, role: ${socket.admin ? "admin" : "user"}
+  );
 
-//     const { lectureId, isResume } = data;
+  /**
+   * GO-LIVE SOCKET EVENT (for Admin/Teacher)
+   *
+   * Expects the data payload to have:
+   *  - lectureId: the MongoDB ID for the lecture
+   *  - isResume: boolean indicating if the session is being resumed or started for the first time
+   */
+  socket.on("go-live", async (data) => {
+    if (!socket.admin) {
+      console.warn(Unauthorized go-live attempt from socket: ${socket.id});
+      return socket.emit("go-live-error", "Unauthorized access");
+    }
 
-//     // Validate lecture ID format
-//     if (!mongoose.Types.ObjectId.isValid(lectureId)) {
-//       console.error(Invalid lecture ID format: ${lectureId});
-//       return socket.emit("go-live-error", "Invalid lecture ID format");
-//     }
+    const { lectureId, isResume } = data;
 
-//     try {
-//       // Find and update lecture:
-//       // - Only update if the lecture's liveDetails.teacher matches the current admin ID
-//       // - Set the status to 'live'
-//       // - Push the connection event (start/resume) into connectionHistory
-//       const lecture = await courseLectureModel.findOneAndUpdate(
-//         { _id: lectureId, "liveDetails.teacher": socket.admin._id },
-//         {
-//           $set: { "liveDetails.status": "live" },
-//           $push: {
-//             "liveDetails.connectionHistory": {
-//               action: isResume ? "resume" : "start",
-//               timestamp: new Date(),
-//             },
-//           },
-//         },
-//         { new: true }
-//       );
+    // Validate lecture ID format
+    if (!mongoose.Types.ObjectId.isValid(lectureId)) {
+      console.error(Invalid lecture ID format: ${lectureId});
+      return socket.emit("go-live-error", "Invalid lecture ID format");
+    }
 
-//       if (!lecture) {
-//         console.error(
-//           Lecture not available or unauthorized for lectureId: ${lectureId}
-//         );
-//         return socket.emit(
-//           "go-live-error",
-//           "Lecture not available or you are not authorized"
-//         );
-//       }
+    try {
+      // Find and update lecture:
+      // - Only update if the lecture's liveDetails.teacher matches the current admin ID
+      // - Set the status to 'live'
+      // - Push the connection event (start/resume) into connectionHistory
+      const lecture = await courseLectureModel.findOneAndUpdate(
+        { _id: lectureId, "liveDetails.teacher": socket.admin._id },
+        {
+          $set: { "liveDetails.status": "live" },
+          $push: {
+            "liveDetails.connectionHistory": {
+              action: isResume ? "resume" : "start",
+              timestamp: new Date(),
+            },
+          },
+        },
+        { new: true }
+      );
 
-//       // Generate Agora token for live session
-//       const token = generateAgoraToken(
-//         lecture.liveDetails.channelName,
-//         socket.admin._id,
-//         "publisher"
-//       );
+      if (!lecture) {
+        console.error(
+          Lecture not available or unauthorized for lectureId: ${lectureId}
+        );
+        return socket.emit(
+          "go-live-error",
+          "Lecture not available or you are not authorized"
+        );
+      }
 
-//       console.log(
-//         Lecture ${lectureId} is now live. Token generated for admin ${socket.admin.email}
-//       );
+      // Generate Agora token for live session
+      const token = generateAgoraToken(
+        lecture.liveDetails.channelName,
+        socket.admin._id,
+        "publisher"
+      );
 
-//       // Optionally, join the lecture room if needed:
-//       socket.join(lecture-${lectureId});
+      console.log(
+        Lecture ${lectureId} is now live. Token generated for admin ${socket.admin.email}
+      );
 
-//       // Emit success back to the teacher with the necessary information
-//       socket.emit("go-live-success", {
-//         token,
-//         channelName: lecture.liveDetails.channelName,
-//         status: lecture.liveDetails.status,
-//       });
-//     } catch (error) {
-//       console.error("Error in go-live event:", error.message);
-//       socket.emit("go-live-error", error.message);
-//     }
-//   });
+      // Optionally, join the lecture room if needed:
+      socket.join(lecture-${lectureId});
 
-//   // admin Connection Handler
-//   socket.on("admin-connect", async (lectureId) => {
-//     if (!socket.admin) {
-//       console.log(Unauthorized admin connection attempt by ${socket.id});
-//       return;
-//     }
+      // Emit success back to the teacher with the necessary information
+      socket.emit("go-live-success", {
+        token,
+        channelName: lecture.liveDetails.channelName,
+        status: lecture.liveDetails.status,
+      });
+    } catch (error) {
+      console.error("Error in go-live event:", error.message);
+      socket.emit("go-live-error", error.message);
+    }
+  });
 
-//     console.log(
-//       admin ${socket.admin.email} is attempting to connect to lecture: ${lectureId}
-//     );
-//     console.log(socket.admin._id, "admin...................................");
-//     // Validate lectureId format
-//     if (!mongoose.Types.ObjectId.isValid(lectureId)) {
-//       console.log(Invalid lecture ID format: ${lectureId});
-//       return socket.emit("lecture-error", "Invalid lecture ID format");
-//     }
+  // admin Connection Handler
+  socket.on("admin-connect", async (lectureId) => {
+    if (!socket.admin) {
+      console.log(Unauthorized admin connection attempt by ${socket.id});
+      return;
+    }
 
-//     try {
-//       const lecture = await courseLectureModel.findOne({
-//         _id: lectureId,
-//         teacher: socket.admin._id,
-//       });
+    console.log(
+      admin ${socket.admin.email} is attempting to connect to lecture: ${lectureId}
+    );
+    console.log(socket.admin._id, "admin...................................");
+    // Validate lectureId format
+    if (!mongoose.Types.ObjectId.isValid(lectureId)) {
+      console.log(Invalid lecture ID format: ${lectureId});
+      return socket.emit("lecture-error", "Invalid lecture ID format");
+    }
 
-//       if (!lecture) {
-//         console.log(
-//           Lecture not found or unauthorized access by ${socket.admin.email}
-//         );
-//         return socket.emit("lecture-error", "Lecture not found");
-//       }
+    try {
+      const lecture = await courseLectureModel.findOne({
+        _id: lectureId,
+        teacher: socket.admin._id,
+      });
 
-//       console.log(
-//         Lecture found: ${lectureId}, joining room lecture-${lectureId}
-//       );
+      if (!lecture) {
+        console.log(
+          Lecture not found or unauthorized access by ${socket.admin.email}
+        );
+        return socket.emit("lecture-error", "Lecture not found");
+      }
 
-//       // Join lecture room
-//       socket.join(lecture-${lectureId});
+      console.log(
+        Lecture found: ${lectureId}, joining room lecture-${lectureId}
+      );
 
-//       // Update lecture status
-//       const updatedLecture = await courseLectureModel.findByIdAndUpdate(
-//         lectureId,
-//         {
-//           status: "live",
-//           $push: {
-//             connectionHistory: {
-//               action: lecture.status === "paused" ? "reconnect" : "connect",
-//               timestamp: new Date(),
-//             },
-//           },
-//         },
-//         { new: true }
-//       );
+      // Join lecture room
+      socket.join(lecture-${lectureId});
 
-//       console.log(Lecture status updated to live for lecture: ${lectureId});
+      // Update lecture status
+      const updatedLecture = await courseLectureModel.findByIdAndUpdate(
+        lectureId,
+        {
+          status: "live",
+          $push: {
+            connectionHistory: {
+              action: lecture.status === "paused" ? "reconnect" : "connect",
+              timestamp: new Date(),
+            },
+          },
+        },
+        { new: true }
+      );
 
-//       // Broadcast to all participants
-//       io.to(lecture-${lectureId}).emit("lecture-update", {
-//         status: "live",
-//         message: "admin has joined the lecture",
-//         teacher: socket.admin.email,
-//         timestamp: new Date(),
-//       });
+      console.log(Lecture status updated to live for lecture: ${lectureId});
 
-//       console.log(Broadcasted lecture update for lecture: ${lectureId});
+      // Broadcast to all participants
+      io.to(lecture-${lectureId}).emit("lecture-update", {
+        status: "live",
+        message: "admin has joined the lecture",
+        teacher: socket.admin.email,
+        timestamp: new Date(),
+      });
 
-//       // Send confirmation to teacher
-//       socket.emit("lecture-connected", {
-//         channelName: lecture.channelName,
-//         participants: updatedLecture.participants,
-//       });
+      console.log(Broadcasted lecture update for lecture: ${lectureId});
 
-//       console.log(
-//         Teacher ${socket.admin.email} connected to lecture: ${lectureId}
-//       );
-//     } catch (error) {
-//       console.error("Error in teacher connection:", error);
-//       socket.emit("lecture-error", "Failed to connect to lecture");
-//     }
-//   });
+      // Send confirmation to teacher
+      socket.emit("lecture-connected", {
+        channelName: lecture.channelName,
+        participants: updatedLecture.participants,
+      });
 
-//   /**
-//    * end-lecture event: Admin ends a live lecture.
-//    * This updates the lecture's status to "ended" and notifies all participants.
-//    */
-//   socket.on("end-lecture", async (lectureId) => {
-//     if (!socket.admin) {
-//       console.warn(
-//         Unauthorized end-lecture attempt from socket: ${socket.id}
-//       );
-//       return socket.emit("end-lecture-error", "Unauthorized access");
-//     }
+      console.log(
+        Teacher ${socket.admin.email} connected to lecture: ${lectureId}
+      );
+    } catch (error) {
+      console.error("Error in teacher connection:", error);
+      socket.emit("lecture-error", "Failed to connect to lecture");
+    }
+  });
 
-//     if (!mongoose.Types.ObjectId.isValid(lectureId)) {
-//       console.error(Invalid lecture ID format: ${lectureId});
-//       return socket.emit("end-lecture-error", "Invalid lecture ID format");
-//     }
+  /**
+   * end-lecture event: Admin ends a live lecture.
+   * This updates the lecture's status to "ended" and notifies all participants.
+   */
+  socket.on("end-lecture", async (lectureId) => {
+    if (!socket.admin) {
+      console.warn(
+        Unauthorized end-lecture attempt from socket: ${socket.id}
+      );
+      return socket.emit("end-lecture-error", "Unauthorized access");
+    }
 
-//     try {
-//       const lecture = await courseLectureModel.findOneAndUpdate(
-//         { _id: lectureId, "liveDetails.teacher": socket.admin._id },
-//         {
-//           $set: { status: "ended", "liveDetails.status": "ended" },
-//           $push: {
-//             connectionHistory: {
-//               action: "end",
-//               timestamp: new Date(),
-//             },
-//           },
-//         },
-//         { new: true }
-//       );
+    if (!mongoose.Types.ObjectId.isValid(lectureId)) {
+      console.error(Invalid lecture ID format: ${lectureId});
+      return socket.emit("end-lecture-error", "Invalid lecture ID format");
+    }
 
-//       if (!lecture) {
-//         console.error(
-//           Lecture not available or unauthorized for lectureId: ${lectureId}
-//         );
-//         return socket.emit(
-//           "end-lecture-error",
-//           "Lecture not available or you are not authorized"
-//         );
-//       }
+    try {
+      const lecture = await courseLectureModel.findOneAndUpdate(
+        { _id: lectureId, "liveDetails.teacher": socket.admin._id },
+        {
+          $set: { status: "ended", "liveDetails.status": "ended" },
+          $push: {
+            connectionHistory: {
+              action: "end",
+              timestamp: new Date(),
+            },
+          },
+        },
+        { new: true }
+      );
 
-//       // Broadcast the end-of-lecture event to all participants
-//       io.to(lecture-${lectureId}).emit("lecture-ended", {
-//         status: "ended",
-//         message: "Lecture has ended",
-//         timestamp: new Date(),
-//       });
+      if (!lecture) {
+        console.error(
+          Lecture not available or unauthorized for lectureId: ${lectureId}
+        );
+        return socket.emit(
+          "end-lecture-error",
+          "Lecture not available or you are not authorized"
+        );
+      }
 
-//       // Optionally, you can force all sockets to leave the lecture room.
-//       io.in(lecture-${lectureId}).socketsLeave(lecture-${lectureId});
+      // Broadcast the end-of-lecture event to all participants
+      io.to(lecture-${lectureId}).emit("lecture-ended", {
+        status: "ended",
+        message: "Lecture has ended",
+        timestamp: new Date(),
+      });
 
-//       socket.emit("end-lecture-success", { lectureId });
-//       console.log(Lecture ${lectureId} ended by admin ${socket.admin.email});
-//     } catch (error) {
-//       console.error("Error in end-lecture event:", error.message);
-//       socket.emit("end-lecture-error", error.message);
-//     }
-//   });
+      // Optionally, you can force all sockets to leave the lecture room.
+      io.in(lecture-${lectureId}).socketsLeave(lecture-${lectureId});
 
-//   // Student Connection Handler
-//   socket.on("student-join", async (lectureId) => {
-//     if (!socket.user) {
-//       console.log(Unauthorized student connection attempt by ${socket.id});
-//       return;
-//     }
+      socket.emit("end-lecture-success", { lectureId });
+      console.log(Lecture ${lectureId} ended by admin ${socket.admin.email});
+    } catch (error) {
+      console.error("Error in end-lecture event:", error.message);
+      socket.emit("end-lecture-error", error.message);
+    }
+  });
 
-//     console.log(
-//       Student ${socket.user.email} is attempting to join lecture: ${lectureId}
-//     );
+  
 
-//     // Validate lectureId format
-//     if (!mongoose.Types.ObjectId.isValid(lectureId)) {
-//       console.log(Invalid lecture ID format: ${lectureId});
-//       return socket.emit("lecture-error", "Invalid lecture ID format");
-//     }
+  // Student Connection Handler
+  socket.on("student-join", async (lectureId) => {
+    if (!socket.user) {
+      console.log(Unauthorized student connection attempt by ${socket.id});
+      return;
+    }
 
-//     try {
-//       const lecture = await courseLectureModel.findById(lectureId);
+    console.log(
+      Student ${socket.user.email} is attempting to join lecture: ${lectureId}
+    );
 
-//       if (!lecture || lecture.status === "ended") {
-//         console.log(Lecture not available or ended for lecture: ${lectureId});
-//         return socket.emit("lecture-error", "Lecture not available");
-//       }
+    // Validate lectureId format
+    if (!mongoose.Types.ObjectId.isValid(lectureId)) {
+      console.log(Invalid lecture ID format: ${lectureId});
+      return socket.emit("lecture-error", "Invalid lecture ID format");
+    }
 
-//       console.log(
-//         Lecture found: ${lectureId}, student joining room lecture-${lectureId}
-//       );
+    try {
+      const lecture = await courseLectureModel.findById(lectureId);
 
-//       // Join lecture room
-//       socket.join(lecture-${lectureId});
+      if (!lecture || lecture.status === "ended") {
+        console.log(Lecture not available or ended for lecture: ${lectureId});
+        return socket.emit("lecture-error", "Lecture not available");
+      }
 
-//       // Update participant list
-//       const updateResult = await courseLectureModel.updateOne(
-//         { _id: lectureId, "participants.user": { $ne: socket.user._id } },
-//         {
-//           $push: {
-//             participants: {
-//               user: socket.user._id,
-//               joinedAt: new Date(),
-//               leftAt: null,
-//             },
-//           },
-//         }
-//       );
+      console.log(
+        Lecture found: ${lectureId}, student joining room lecture-${lectureId}
+      );
 
-//       console.log(
-//         Student ${socket.user.email} added to participants in lecture: ${lectureId}
-//       );
+      // Join lecture room
+      socket.join(lecture-${lectureId});
 
-//       // Notify others
-//       socket.to(lecture-${lectureId}).emit("participant-joined", {
-//         userId: socket.user._id,
-//         timestamp: new Date(),
-//       });
+      // Update participant list
+      const updateResult = await courseLectureModel.updateOne(
+        { _id: lectureId, "participants.user": { $ne: socket.user._id } },
+        {
+          $push: {
+            participants: {
+              user: socket.user._id,
+              joinedAt: new Date(),
+              leftAt: null,
+            },
+          },
+        }
+      );
 
-//       console.log(
-//         Broadcasted participant joined event for student: ${socket.user.email}
-//       );
-//     } catch (error) {
-//       console.error("Error in student joining:", error);
-//       socket.emit("lecture-error", "Failed to join lecture");
-//     }
-//   });
+      console.log(
+        Student ${socket.user.email} added to participants in lecture: ${lectureId}
+      );
 
-//   // Handle Disconnections
-//   socket.on("disconnect", async () => {
-//     console.log(Socket disconnected: ${socket.id});
+      // Notify others
+      socket.to(lecture-${lectureId}).emit("participant-joined", {
+        userId: socket.user._id,
+        timestamp: new Date(),
+      });
 
-//     try {
-//       // Handle teacher (admin) disconnection
-//       if (socket.admin) {
-//         console.log(Admin ${socket.admin.email} disconnected);
-//         const lectures = await courseLectureModel.find({
-//           teacher: socket.admin._id,
-//           status: "live",
-//         });
+      console.log(
+        Broadcasted participant joined event for student: ${socket.user.email}
+      );
+    } catch (error) {
+      console.error("Error in student joining:", error);
+      socket.emit("lecture-error", "Failed to join lecture");
+    }
+  });
 
-//         for (const lecture of lectures) {
-//           console.log(
-//             Pausing lecture: ${lecture._id} due to admin disconnection
-//           );
-//           await courseLectureModel.findByIdAndUpdate(lecture._id, {
-//             status: "paused",
-//             $push: {
-//               connectionHistory: {
-//                 action: "disconnect",
-//                 timestamp: new Date(),
-//               },
-//             },
-//           });
-//           io.to(lecture-${lecture._id}).emit("lecture-update", {
-//             status: "paused",
-//             message: "Admin disconnected",
-//             timestamp: new Date(),
-//           });
-//         }
-//       }
+  // Handle Disconnections
+  socket.on("disconnect", async () => {
+    console.log(Socket disconnected: ${socket.id});
 
-//       // Handle student disconnection
-//       if (socket.user) {
-//         console.log(Student ${socket.user.email} disconnected);
+    try {
+      // Handle teacher (admin) disconnection
+      if (socket.admin) {
+        console.log(Admin ${socket.admin.email} disconnected);
+        const lectures = await courseLectureModel.find({
+          teacher: socket.admin._id,
+          status: "live",
+        });
 
-//         // Use courseLectureModel to update participant leftAt timestamp.
-//         await courseLectureModel.updateMany(
-//           { "participants.user": socket.user._id },
-//           {
-//             $set: { "participants.$[elem].leftAt": new Date() },
-//           },
-//           { arrayFilters: [{ "elem.user": socket.user._id }] }
-//         );
-//         io.emit("participant-left", {
-//           userId: socket.user._id,
-//           timestamp: new Date(),
-//         });
-//       }
-//     } catch (error) {
-//       console.error("Error during disconnection:", error.message);
-//     }
-//   });
-// });
+        for (const lecture of lectures) {
+          console.log(
+            Pausing lecture: ${lecture._id} due to admin disconnection
+          );
+          await courseLectureModel.findByIdAndUpdate(lecture._id, {
+            status: "paused",
+            $push: {
+              connectionHistory: {
+                action: "disconnect",
+                timestamp: new Date(),
+              },
+            },
+          });
+          io.to(lecture-${lecture._id}).emit("lecture-update", {
+            status: "paused",
+            message: "Admin disconnected",
+            timestamp: new Date(),
+          });
+        }
+      }
 
-// httpServer.listen(port, () => {
-//   console.log(🚀 Server running on port ${port});
-// });
+      // Handle student disconnection
+      if (socket.user) {
+        console.log(Student ${socket.user.email} disconnected);
+
+        // Use courseLectureModel to update participant leftAt timestamp.
+        await courseLectureModel.updateMany(
+          { "participants.user": socket.user._id },
+          {
+            $set: { "participants.$[elem].leftAt": new Date() },
+          },
+          { arrayFilters: [{ "elem.user": socket.user._id }] }
+        );
+        io.emit("participant-left", {
+          userId: socket.user._id,
+          timestamp: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error("Error during disconnection:", error.message);
+    }
+  });
+});
+
+httpServer.listen(port, () => {
+  console.log(🚀 Server running on port ${port});
+});

@@ -16,7 +16,12 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Divider
+  Divider,
+  Avatar,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
 } from "@mui/material";
 import {
   Videocam,
@@ -26,7 +31,7 @@ import {
   LiveTv,
   StopCircle,
   CheckCircle,
-  ErrorOutline
+  ErrorOutline,
 } from "@mui/icons-material";
 
 const TeacherLiveLecture = () => {
@@ -39,7 +44,10 @@ const TeacherLiveLecture = () => {
   const [micEnabled, setMicEnabled] = useState(true);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+  const [participants, setParticipants] = useState([]);
+  const [participantCount, setParticipantCount] = useState(0);
+  const [activeUsers, setActiveUsers] = useState(new Map());
+console.log(participants,"participant")
   const localStreamRef = useRef(null);
   const clientRef = useRef(null);
   const socketRef = useRef(null);
@@ -52,14 +60,27 @@ const TeacherLiveLecture = () => {
     const newSocket = io("https://lmsapp-plvj.onrender.com", {
       auth: {
         token: token,
-        userType: "admin"
+        userType: "admin",
       },
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 3000
+      reconnectionDelay: 3000,
     });
 
     socketRef.current = newSocket;
+
+    const handleConnect = () => {
+      console.log("Connected to socket:", newSocket.id);
+      if (lectureId) {
+        newSocket.emit("request-participants", lectureId);
+      }
+    };
+
+    const handleParticipantsUpdate = (data) => {
+      console.log("Received participants:", data);
+      setParticipants(data.participants);
+      setParticipantCount(data.count);
+    };
 
     const handleGoLiveSuccess = (data) => {
       setAgoraToken(data.token);
@@ -86,6 +107,8 @@ const TeacherLiveLecture = () => {
       setLoading(false);
     };
 
+    newSocket.on("connect", handleConnect);
+    newSocket.on("participants-update", handleParticipantsUpdate);
     newSocket.on("go-live-success", handleGoLiveSuccess);
     newSocket.on("lecture-update", handleLectureUpdate);
     newSocket.on("lecture-ended", handleLectureEnded);
@@ -95,6 +118,8 @@ const TeacherLiveLecture = () => {
 
     return () => {
       newSocket.disconnect();
+      newSocket.off("connect", handleConnect);
+      newSocket.off("participants-update", handleParticipantsUpdate);
       newSocket.off("go-live-success", handleGoLiveSuccess);
       newSocket.off("lecture-update", handleLectureUpdate);
       newSocket.off("lecture-ended", handleLectureEnded);
@@ -103,7 +128,7 @@ const TeacherLiveLecture = () => {
       newSocket.off("lecture-error", handleErrors);
       stopBroadcast();
     };
-  }, [token]);
+  }, [lectureId, token]);
 
   const initializeAgora = async () => {
     const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
@@ -112,11 +137,47 @@ const TeacherLiveLecture = () => {
     return client;
   };
 
+  const handleUserPublished = async (user, mediaType) => {
+    await clientRef.current.subscribe(user, mediaType);
+    if (mediaType === "video") {
+      const remotePlayerContainer = document.createElement("div");
+      remotePlayerContainer.id = user.uid;
+      remotePlayerContainer.style.width = "320px";
+      remotePlayerContainer.style.height = "240px";
+      remotePlayerContainer.style.margin = "10px";
+      videoContainerRef.current.appendChild(remotePlayerContainer);
+      user.videoTrack.play(remotePlayerContainer);
+    }
+
+    setActiveUsers((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(user.uid, {
+        uid: user.uid,
+        hasAudio: user.hasAudio,
+        hasVideo: user.hasVideo,
+      });
+      return newMap;
+    });
+  };
+
+  const handleUserUnpublished = (user) => {
+    setActiveUsers((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(user.uid);
+      return newMap;
+    });
+    const element = document.getElementById(user.uid);
+    if (element) element.remove();
+  };
+
   const startBroadcast = async () => {
     setLoading(true);
     try {
       const client = await initializeAgora();
       const uid = profile._id;
+
+      client.on("user-published", handleUserPublished);
+      client.on("user-unpublished", handleUserUnpublished);
 
       await client.join(
         "90dde3ee5fbc4fe5a6a876e972c7bb2a",
@@ -127,7 +188,7 @@ const TeacherLiveLecture = () => {
 
       const [audioTrack, videoTrack] = await Promise.all([
         AgoraRTC.createMicrophoneAudioTrack(),
-        AgoraRTC.createCameraVideoTrack()
+        AgoraRTC.createCameraVideoTrack(),
       ]);
 
       localStreamRef.current = { audioTrack, videoTrack };
@@ -149,6 +210,8 @@ const TeacherLiveLecture = () => {
     setLoading(true);
     try {
       if (clientRef.current) {
+        clientRef.current.off("user-published", handleUserPublished);
+        clientRef.current.off("user-unpublished", handleUserUnpublished);
         await clientRef.current.leave();
         clientRef.current = null;
       }
@@ -157,6 +220,7 @@ const TeacherLiveLecture = () => {
         localStreamRef.current.videoTrack?.close();
         localStreamRef.current = null;
       }
+      setActiveUsers(new Map());
       setStatus("disconnected");
       socketRef.current.emit("end-lecture", lectureId);
     } catch (error) {
@@ -188,12 +252,27 @@ const TeacherLiveLecture = () => {
 
   const getStatusIcon = () => {
     switch (status) {
-      case "connected": return <CheckCircle fontSize="small" />;
-      case "ready": return <CircularProgress size={20} />;
-      case "ended": return <ErrorOutline fontSize="small" />;
-      default: return <ErrorOutline fontSize="small" />;
+      case "connected":
+        return <CheckCircle fontSize="small" />;
+      case "ready":
+        return <CircularProgress size={20} />;
+      case "ended":
+        return <ErrorOutline fontSize="small" />;
+      default:
+        return <ErrorOutline fontSize="small" />;
     }
   };
+
+  const getParticipantStatus = (userId) => {
+    return Array.from(activeUsers.values()).some(
+      (u) => u.uid === userId.toString()
+    );
+  };
+
+  const mergedParticipants = participants.map((p) => ({
+    ...p,
+    isOnline: getParticipantStatus(p.userId),
+  }));
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -205,8 +284,11 @@ const TeacherLiveLecture = () => {
           <Chip
             label={status.toUpperCase()}
             color={
-              status === "connected" ? "success" :
-              status === "ready" ? "warning" : "error"
+              status === "connected"
+                ? "success"
+                : status === "ready"
+                ? "warning"
+                : "error"
             }
             icon={getStatusIcon()}
             sx={{ ml: 2 }}
@@ -215,10 +297,18 @@ const TeacherLiveLecture = () => {
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
-            <Card sx={{ height: 500, bgcolor: 'background.default' }}>
+            <Card sx={{ height: 500, bgcolor: "background.default" }}>
               <div
                 ref={videoContainerRef}
-                style={{ width: '100%', height: '100%' }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: "10px",
+                }}
               />
               {status !== "connected" && (
                 <Box
@@ -226,9 +316,9 @@ const TeacherLiveLecture = () => {
                   top="50%"
                   left="50%"
                   sx={{
-                    transform: 'translate(-50%, -50%)',
-                    textAlign: 'center',
-                    color: 'text.secondary'
+                    transform: "translate(-50%, -50%)",
+                    textAlign: "center",
+                    color: "text.secondary",
                   }}
                 >
                   <LiveTv sx={{ fontSize: 80, mb: 2 }} />
@@ -258,6 +348,9 @@ const TeacherLiveLecture = () => {
                 <Typography variant="body2" color="text.secondary">
                   Status: {status}
                 </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Participants: {participantCount}
+                </Typography>
               </CardContent>
             </Card>
 
@@ -281,8 +374,7 @@ const TeacherLiveLecture = () => {
                     {micEnabled ? <Mic /> : <MicOff />}
                   </IconButton>
                 </Grid>
-                
-                {/* Conditional Buttons */}
+
                 {status === "ready" ? (
                   <Grid item xs={12}>
                     <Button
@@ -301,8 +393,12 @@ const TeacherLiveLecture = () => {
                       fullWidth
                       variant="contained"
                       color={status === "connected" ? "error" : "primary"}
-                      startIcon={status === "connected" ? <StopCircle /> : <LiveTv />}
-                      onClick={status === "connected" ? stopBroadcast : handleGoLive}
+                      startIcon={
+                        status === "connected" ? <StopCircle /> : <LiveTv />
+                      }
+                      onClick={
+                        status === "connected" ? stopBroadcast : handleGoLive
+                      }
                       disabled={loading}
                       sx={{ height: 48 }}
                     >
@@ -318,17 +414,70 @@ const TeacherLiveLecture = () => {
                 )}
               </Grid>
             </Paper>
+
+            <Card sx={{ mt: 2, height: 400 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Participants ({participantCount})
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <List
+                  sx={{
+                    height: 300,
+                    overflow: "auto",
+                    "&::-webkit-scrollbar": { width: "6px" },
+                    "&::-webkit-scrollbar-thumb": { backgroundColor: "#888" },
+                  }}
+                >
+                  {mergedParticipants.length === 0 ? (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ p: 2 }}
+                    >
+                      No participants yet
+                    </Typography>
+                  ) : (
+                    mergedParticipants.map((participant) => (
+                      <ListItem key={participant._id} sx={{ py: 1 }}>
+                        <ListItemAvatar>
+                          <Avatar
+                            src={participant.user?.avatar}
+                            sx={{
+                              bgcolor: participant.isOnline
+                                ? "success.main"
+                                : "grey.500",
+                            }}
+                          >
+                            {participant.user?.name?.charAt(0)}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={participant.user?.name}
+                          secondary={participant.user?.email}
+                        />
+                        <Chip
+                          label={participant.isOnline ? "Online" : "Offline"}
+                          color={participant.isOnline ? "success" : "default"}
+                          size="small"
+                        />
+                      </ListItem>
+                    ))
+                  )}
+                </List>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
-      </Paper>
 
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-        message={message}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      />
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={() => setSnackbarOpen(false)}
+          message={message}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        />
+      </Paper>
     </Container>
   );
 };

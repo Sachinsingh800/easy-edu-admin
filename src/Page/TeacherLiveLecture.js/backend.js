@@ -1,25 +1,3 @@
-require("dotenv/config");
-
-const mongoose = require("mongoose");
-
-const app = require("./app");
-
-const { createServer } = require("http");
-const { Server } = require("socket.io");
-const jwt = require("jsonwebtoken");
-const courseLectureModel = require("./models/adminModel/adminCourseModel/adminCourseLectureModel");
-const studentAuhModel = require("./models/studentModel/studentAuthModel");
-const { generateAgoraToken } = require("./utils/agora");
-
-const httpServer = createServer(app);
-// const io = new Server(httpServer, {
-//   cors: {
-//     origin: ["*","http://localhost:3000", "https://live-classes.vercel.app"],
-//     methods: ["GET", "POST"],
-//     credentials: true,
-//   },
-// });
-
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
@@ -36,6 +14,16 @@ mongoose
 
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.log(err.message));
+
+// Utility function to get participants list
+const getParticipantsList = async (lectureId) => {
+  const lecture = await courseLectureModel
+    .findById(lectureId)
+    .populate("liveDetails.participants.user", "name email avatar")
+    .select("liveDetails.participants");
+
+  return lecture.liveDetails.participants.filter((p) => !p.leftAt);
+};
 
 io.use(async (socket, next) => {
   try {
@@ -57,9 +45,18 @@ io.use(async (socket, next) => {
     // Verify JWT
     const decoded = jwt.verify(token, secret);
 
-    // Check user existence in DB
-    const user = await studentAuhModel.findById(decoded.id);
-    if (!user) throw new Error("User not found");
+    let user;
+
+    if (userType === "admin") {
+      user = await adminAuthModel.findById(decoded._id).select("-password");
+    } else {
+      user = await studentAuhModel.findById(decoded._id);
+      console.log("userType ", userType, user);
+    }
+
+    if (!user) {
+      throw new Error(${userType} not found);
+    }
 
     // Attach user type specific data
     if (userType === "admin") {
@@ -88,6 +85,12 @@ io.on("connection", (socket) => {
     New connection: ${socket.id}, role: ${socket.admin ? "admin" : "user"}
   );
 
+  // Error handling utility
+  const handleError = (error, event, socket) => {
+    console.error(Socket ${event} error:, error);
+    socket.emit("socket-error", { event, message: error.message });
+  };
+
   /**
    * GO-LIVE SOCKET EVENT (for Admin/Teacher)
    *
@@ -95,6 +98,7 @@ io.on("connection", (socket) => {
    *  - lectureId: the MongoDB ID for the lecture
    *  - isResume: boolean indicating if the session is being resumed or started for the first time
    */
+
   socket.on("go-live", async (data) => {
     if (!socket.admin) {
       console.warn(Unauthorized go-live attempt from socket: ${socket.id});
@@ -154,13 +158,13 @@ io.on("connection", (socket) => {
 
       // Emit success back to the teacher with the necessary information
       socket.emit("go-live-success", {
+        success: true,
         token,
         channelName: lecture.liveDetails.channelName,
         status: lecture.liveDetails.status,
       });
     } catch (error) {
-      console.error("Error in go-live event:", error.message);
-      socket.emit("go-live-error", error.message);
+      handleError(error, "go-live", socket);
     }
   });
 
@@ -184,7 +188,7 @@ io.on("connection", (socket) => {
     try {
       const lecture = await courseLectureModel.findOne({
         _id: lectureId,
-        teacher: socket.admin._id,
+        "liveDetails.teacher": socket.admin._id,
       });
 
       if (!lecture) {
@@ -247,6 +251,7 @@ io.on("connection", (socket) => {
    * end-lecture event: Admin ends a live lecture.
    * This updates the lecture's status to "ended" and notifies all participants.
    */
+
   socket.on("end-lecture", async (lectureId) => {
     if (!socket.admin) {
       console.warn(
@@ -298,12 +303,136 @@ io.on("connection", (socket) => {
       socket.emit("end-lecture-success", { lectureId });
       console.log(Lecture ${lectureId} ended by admin ${socket.admin.email});
     } catch (error) {
-      console.error("Error in end-lecture event:", error.message);
-      socket.emit("end-lecture-error", error.message);
+      handleError(error, "end-lecture", socket);
     }
   });
 
-  
+  socket.on("student-join-request", async (lectureId) => {
+    try {
+      console.log("...................... jjjjjjjjjjjjjjjjjjjjjjjjj check 2");
+
+      if (!socket.user) throw new Error("Unauthorized access");
+
+      // Validate lecture ID
+      if (!mongoose.isValidObjectId(lectureId)) {
+        return socket.emit("lecture-error", "Invalid lecture ID format");
+      }
+
+      // Find lecture with population
+      const lecture = await courseLectureModel
+        .findById(lectureId)
+        .populate("liveDetails.teacher", "name email")
+        .populate("courseId", "title price mrp discount isFree");
+
+      // Lecture availability checks
+      if (!lecture || lecture.contentType !== "Live") {
+        return socket.emit("lecture-error", "Lecture not available");
+      }
+
+      // Lecture status check
+      if (lecture.liveDetails.status === "ended") {
+        return socket.emit("lecture-ended");
+      }
+
+      // Course free check
+      const course = await courseModel.findById(lecture.courseId);
+      if (!course) throw new Error("Associated course not found");
+
+      console.log("...................... jjjjjjjjjjjjjjjjjjjjjjjjj check ");
+
+      // Payment verification for non-free content
+      if (!lecture.isFreeContent && !course.isFree) {
+        const paymentExists = await CoursePaymentModel.findOne({
+          courseId: lecture.courseId,
+          userId: socket.user._id,
+        });
+
+        if (!paymentExists) {
+          console.log(
+            ` ${
+              ({
+                courseId: course._id,
+                title: course.title,
+                price: course.price,
+                mrp: course.mrp,
+                discount: course.discount,
+              },
+              {
+                amount: course.price,
+                currency: "INR",
+                description: course.title,
+              })
+            }`
+          );
+
+          console.log(
+            "...................... jjjjjjjjjjjjjjjjjjjjjjjjj check 2"
+          );
+
+          return socket.emit("payment-required", {
+            courseDetails: {
+              courseId: course._id,
+              title: course.title,
+              price: course.price,
+              mrp: course.mrp,
+              discount: course.discount,
+            },
+            checkout: {
+              amount: course.price,
+              currency: "INR",
+              description: course.title,
+            },
+          });
+        }
+      }
+
+      console.log(
+        "lecture.liveDetails.channelName.................",
+        lecture.liveDetails.channelName
+      );
+
+      // Generate Agora token
+      const token = generateAgoraToken(
+        lecture.liveDetails.channelName,
+        socket.user._id,
+        "subscriber"
+      );
+
+      // Update participants list if not already joined
+      await courseLectureModel.updateOne(
+        {
+          _id: lectureId,
+          "liveDetails.participants.user": { $ne: socket.user._id },
+        },
+        {
+          $push: {
+            "liveDetails.participants": {
+              user: socket.user._id,
+              joinedAt: new Date(),
+            },
+          },
+        }
+      );
+
+      // Join lecture room
+      socket.join(lecture-${lectureId});
+
+      // Notify student and others
+      socket.emit("join-success", {
+        token,
+        channelName: lecture.liveDetails.channelName,
+        teacher: lecture.liveDetails.teacher,
+        status: lecture.liveDetails.status,
+      });
+
+      socket.to(lecture-${lectureId}).emit("participant-joined", {
+        userId: socket.user._id,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      handleError(error, "student-join-request", socket);
+    }
+  });
 
   // Student Connection Handler
   socket.on("student-join", async (lectureId) => {
@@ -370,32 +499,92 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle Disconnections
-  socket.on("disconnect", async () => {
-    console.log(Socket disconnected: ${socket.id});
-
+  // Request participants list
+  socket.on("request-participants", async (lectureId) => {
     try {
-      // Handle teacher (admin) disconnection
+      if (!isValidObjectId(lectureId)) throw new Error("Invalid lecture ID");
+
+      const participants = await getParticipantsList(lectureId);
+      socket.emit("participants-update", {
+        lectureId,
+        participants,
+        count: participants.length,
+      });
+    } catch (error) {
+      handleError(error, "request-participants");
+    }
+  });
+
+  // Admin: Remove participant
+  socket.on("remove-participant", async ({ lectureId, userId }) => {
+    try {
+      if (!socket.admin) throw new Error("Unauthorized access");
+
+      await courseLectureModel.updateOne(
+        { _id: lectureId },
+        { $set: { "liveDetails.participants.$[elem].leftAt": new Date() } },
+        { arrayFilters: [{ "elem.user": userId }] }
+      );
+
+      const participants = await getParticipantsList(lectureId);
+
+      io.to(lecture-${lectureId}).emit("participants-update", {
+        lectureId,
+        participants,
+        count: participants.length,
+        action: "remove",
+        userId,
+      });
+    } catch (error) {
+      handleError(error, "remove-participant");
+    }
+  });
+
+// live chat 
+
+// audio with condition (Admin (Participents unmute / mute ))
+
+
+  // Real-time Lecture Status Updates
+  socket.on("request-lecture-status", async (lectureId) => {
+    try {
+      const lecture = await courseLectureModel
+        .findById(lectureId)
+        .select("liveDetails.status");
+
+      if (!lecture) throw new Error("Lecture not found");
+
+      socket.emit("lecture-status-update", {
+        status: lecture.liveDetails.status,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      handleError(error, "request-lecture-status", socket);
+    }
+  });
+
+  // Disconnect handler
+  socket.on("disconnect", async () => {
+    try {
+      console.log(Socket disconnected: ${socket.id});
+
       if (socket.admin) {
-        console.log(Admin ${socket.admin.email} disconnected);
         const lectures = await courseLectureModel.find({
-          teacher: socket.admin._id,
-          status: "live",
+          "liveDetails.teacher": socket.admin._id,
+          "liveDetails.status": "live",
         });
 
         for (const lecture of lectures) {
-          console.log(
-            Pausing lecture: ${lecture._id} due to admin disconnection
-          );
           await courseLectureModel.findByIdAndUpdate(lecture._id, {
-            status: "paused",
+            $set: { "liveDetails.status": "paused" },
             $push: {
-              connectionHistory: {
+              "liveDetails.connectionHistory": {
                 action: "disconnect",
                 timestamp: new Date(),
               },
             },
           });
+
           io.to(lecture-${lecture._id}).emit("lecture-update", {
             status: "paused",
             message: "Admin disconnected",
@@ -404,29 +593,31 @@ io.on("connection", (socket) => {
         }
       }
 
-      // Handle student disconnection
       if (socket.user) {
-        console.log(Student ${socket.user.email} disconnected);
-
-        // Use courseLectureModel to update participant leftAt timestamp.
         await courseLectureModel.updateMany(
-          { "participants.user": socket.user._id },
-          {
-            $set: { "participants.$[elem].leftAt": new Date() },
-          },
+          { "liveDetails.participants.user": socket.user._id },
+          { $set: { "liveDetails.participants.$[elem].leftAt": new Date() } },
           { arrayFilters: [{ "elem.user": socket.user._id }] }
         );
-        io.emit("participant-left", {
-          userId: socket.user._id,
-          timestamp: new Date(),
+
+        const rooms = Array.from(socket.rooms).filter((room) =>
+          room.startsWith("lecture-")
+        );
+        rooms.forEach(async (room) => {
+          const lectureId = room.split("-")[1];
+          const participants = await getParticipantsList(lectureId);
+
+          io.to(room).emit("participants-update", {
+            lectureId,
+            participants,
+            count: participants.length,
+            action: "leave",
+            userId: socket.user._id,
+          });
         });
       }
     } catch (error) {
-      console.error("Error during disconnection:", error.message);
+      console.error("Disconnect error:", error);
     }
   });
-});
-
-httpServer.listen(port, () => {
-  console.log(🚀 Server running on port ${port});
 });

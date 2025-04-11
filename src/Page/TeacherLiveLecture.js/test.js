@@ -1,184 +1,153 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
-import io from "socket.io-client";
+import { io } from "socket.io-client";
 import AgoraRTC from "agora-rtc-sdk-ng";
-import axios from "axios";
 import Cookies from "js-cookie";
 import {
   Box,
   Button,
-  Grid,
+  Container,
   Paper,
   Typography,
   IconButton,
-  CircularProgress,
   Chip,
   Snackbar,
-  Tooltip,
+  Grid,
   Card,
   CardContent,
+  CircularProgress,
   Divider,
-  TextField,
+  List,
+  ListItem,
+  ListItemAvatar,
+  Avatar,
+  ListItemText,
+  ListItemSecondaryAction,
+  LinearProgress,
 } from "@mui/material";
 import {
   Videocam,
   VideocamOff,
   Mic,
   MicOff,
-  StopCircle,
-  ErrorOutline,
-  CheckCircle,
-  WarningAmber,
   LiveTv,
+  StopCircle,
+  CheckCircle,
+  ErrorOutline,
+  PersonRemove,
 } from "@mui/icons-material";
-import { styled } from "@mui/material/styles";
-
-const StyledVideoContainer = styled(Card)(({ theme }) => ({
-  width: "100%",
-  height: 480,
-  backgroundColor: theme.palette.grey[900],
-  position: "relative",
-  overflow: "hidden",
-  borderRadius: theme.shape.borderRadius,
-}));
-
-const ControlBar = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
-  marginTop: theme.spacing(2),
-  backgroundColor: theme.palette.background.paper,
-}));
-
-const StatusChip = styled(Chip)(({ theme, status }) => ({
-  marginLeft: theme.spacing(2),
-  backgroundColor: status === "connected" 
-    ? theme.palette.success.light
-    : status === "connecting" 
-    ? theme.palette.warning.light
-    : theme.palette.error.light,
-  color: theme.palette.getContrastText(
-    status === "connected" 
-      ? theme.palette.success.light
-      : status === "connecting" 
-      ? theme.palette.warning.light
-      : theme.palette.error.light
-  ),
-}));
 
 const TeacherLiveLecture = () => {
   const { lectureId } = useParams();
-  const socketServerUrl = "https://lmsapp-plvj.onrender.com";
-  const appId = "90dde3ee5fbc4fe5a6a876e972c7bb2a";
-  
-  const [connectionStatus, setConnectionStatus] = useState("disconnected");
-  const [cameraEnabled, setCameraEnabled] = useState(true);
-  const [micEnabled, setMicEnabled] = useState(true);
+  const [status, setStatus] = useState("disconnected");
   const [channelName, setChannelName] = useState("");
   const [agoraToken, setAgoraToken] = useState("");
   const [message, setMessage] = useState("");
+  const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [micEnabled, setMicEnabled] = useState(true);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  
-  const clientRef = useRef(null);
+  const [participants, setParticipants] = useState([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(true);
+
   const localStreamRef = useRef(null);
+  const clientRef = useRef(null);
   const socketRef = useRef(null);
   const videoContainerRef = useRef(null);
-  
+
   const profile = JSON.parse(localStorage.getItem("profile"));
   const token = Cookies.get("token");
-  const role = profile?.role;
 
   useEffect(() => {
-    if (!token) return;
+    const initializeSocket = async () => {
+      const newSocket = io("https://lmsapp-plvj.onrender.com", {
+        auth: { token, userType: "admin" },
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 3000,
+      });
 
-    const newSocket = io(socketServerUrl, {
-      auth: { token, userType: role },
-      reconnectionAttempts: 3,
-      timeout: 5000,
-    });
+      socketRef.current = newSocket;
 
-    socketRef.current = newSocket;
+      // Socket event handlers
+      const handleParticipantsUpdate = ({ participants }) => {
+        setParticipants(participants);
+        setLoadingParticipants(false);
+      };
 
-    // Socket event listeners
-    const handleSocketEvents = {
-      'go-live-success': (data) => {
+      const handleGoLiveSuccess = (data) => {
         setAgoraToken(data.token);
         setChannelName(data.channelName);
-        setConnectionStatus(data.status);
-        setMessage("Lecture is live!");
-      },
-      'go-live-error': (err) => setMessage(`Go Live Error: ${err}`),
-      'lecture-update': (data) => {
-        setConnectionStatus(data.status);
+        setStatus("ready");
+        setMessage("Lecture is live! Start your broadcast");
+        setSnackbarOpen(true);
+      };
+
+      const handleLectureUpdate = (data) => {
+        setStatus(data.status);
         setMessage(data.message);
-      },
-      'lecture-connected': (data) => {
-        setChannelName(data.channelName);
-        setMessage("Lecture connected successfully.");
-      },
-      'lecture-ended': (data) => {
-        setConnectionStatus(data.status);
-        setMessage("Lecture has ended.");
-        stopAgoraBroadcast();
-      },
-      'end-lecture-success': () => setMessage("Lecture ended successfully"),
-      'end-lecture-error': (err) => setMessage(`End Lecture Error: ${err}`),
+      };
+
+      const handleLectureEnded = () => {
+        setStatus("ended");
+        stopBroadcast();
+        setMessage("Lecture has ended");
+      };
+
+      const handleError = (error) => {
+        setMessage(error);
+        setSnackbarOpen(true);
+        setLoading(false);
+      };
+
+      // Setup listeners
+      newSocket.on("go-live-success", handleGoLiveSuccess);
+      newSocket.on("lecture-update", handleLectureUpdate);
+      newSocket.on("lecture-ended", handleLectureEnded);
+      newSocket.on("participants-update", handleParticipantsUpdate);
+      newSocket.on("error", handleError);
+
+      // Request initial participants list
+      newSocket.emit("request-participants", lectureId);
+      setLoadingParticipants(true);
+
+      return () => {
+        newSocket.disconnect();
+        newSocket.off("go-live-success", handleGoLiveSuccess);
+        newSocket.off("lecture-update", handleLectureUpdate);
+        newSocket.off("lecture-ended", handleLectureEnded);
+        newSocket.off("participants-update", handleParticipantsUpdate);
+        newSocket.off("error", handleError);
+        stopBroadcast();
+      };
     };
 
-    Object.entries(handleSocketEvents).forEach(([event, handler]) => {
-      newSocket.on(event, handler);
-    });
+    initializeSocket();
+  }, [token, lectureId]);
 
-    return () => {
-      newSocket.disconnect();
-      Object.entries(handleSocketEvents).forEach(([event, handler]) => {
-        newSocket.off(event, handler);
-      });
-      stopAgoraBroadcast();
-    };
-  }, [token, role]);
-
-  const handleGoLive = () => {
-    socketRef.current.emit("go-live", { lectureId, isResume: false });
+  const handleRemoveParticipant = (userId) => {
+    socketRef.current.emit("remove-participant", { lectureId, userId });
   };
 
-  const handleEndLecture = () => {
-    socketRef.current.emit("end-lecture", lectureId);
+  const initializeAgora = async () => {
+    const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
+    clientRef.current = client;
+    await client.setClientRole("host");
+    return client;
   };
 
-  const toggleCamera = async () => {
+  const startBroadcast = async () => {
+    setLoading(true);
     try {
-      if (localStreamRef.current?.videoTrack) {
-        await localStreamRef.current.videoTrack.setEnabled(!cameraEnabled);
-        setCameraEnabled(!cameraEnabled);
-      }
-    } catch (error) {
-      setMessage("Failed to toggle camera");
-      console.error("Camera toggle error:", error);
-    }
-  };
+      const client = await initializeAgora();
+      const uid = profile._id;
 
-  const toggleMic = async () => {
-    try {
-      if (localStreamRef.current?.audioTrack) {
-        await localStreamRef.current.audioTrack.setEnabled(!micEnabled);
-        setMicEnabled(!micEnabled);
-      }
-    } catch (error) {
-      setMessage("Failed to toggle microphone");
-      console.error("Mic toggle error:", error);
-    }
-  };
-
-  const startAgoraBroadcast = async () => {
-    try {
-      setLoading(true);
-      setConnectionStatus("connecting");
-      
-      const agoraClient = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
-      clientRef.current = agoraClient;
-
-      await agoraClient.setClientRole("host");
-      await agoraClient.join(appId, channelName, agoraToken, profile._id);
+      await client.join(
+        "90dde3ee5fbc4fe5a6a876e972c7bb2a",
+        channelName,
+        agoraToken,
+        uid
+      );
 
       const [audioTrack, videoTrack] = await Promise.all([
         AgoraRTC.createMicrophoneAudioTrack(),
@@ -186,179 +155,251 @@ const TeacherLiveLecture = () => {
       ]);
 
       localStreamRef.current = { audioTrack, videoTrack };
-      await agoraClient.publish([audioTrack, videoTrack]);
+      await client.publish([audioTrack, videoTrack]);
       videoTrack.play(videoContainerRef.current);
-      
-      setConnectionStatus("connected");
+
+      setStatus("connected");
+      socketRef.current.emit("admin-connect", lectureId);
     } catch (error) {
-      console.error("Agora error:", error);
-      setMessage("Failed to start broadcast");
-      stopAgoraBroadcast();
+      console.error("Broadcast Error:", error);
+      setMessage(`Broadcast Error: ${error.message}`);
+      stopBroadcast();
     } finally {
       setLoading(false);
     }
   };
 
-  const stopAgoraBroadcast = async () => {
-    if (clientRef.current) {
-      await clientRef.current.leave();
-      clientRef.current = null;
+  const stopBroadcast = async () => {
+    setLoading(true);
+    try {
+      if (clientRef.current) {
+        await clientRef.current.leave();
+        clientRef.current = null;
+      }
+      if (localStreamRef.current) {
+        localStreamRef.current.audioTrack?.close();
+        localStreamRef.current.videoTrack?.close();
+        localStreamRef.current = null;
+      }
+      setStatus("disconnected");
+      socketRef.current.emit("end-lecture", lectureId);
+    } catch (error) {
+      console.error("Error stopping broadcast:", error);
+    } finally {
+      setLoading(false);
     }
-    if (localStreamRef.current) {
-      localStreamRef.current.audioTrack?.close();
-      localStreamRef.current.videoTrack?.close();
-      localStreamRef.current = null;
-    }
-    setCameraEnabled(true);
-    setMicEnabled(true);
-    setConnectionStatus("disconnected");
   };
 
+  const ParticipantList = () => (
+    <Card sx={{ mt: 2, maxHeight: 400, overflow: "auto" }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Participants ({participants.length})
+        </Typography>
+        {loadingParticipants ? (
+          <LinearProgress />
+        ) : (
+          <List dense>
+            {participants.map((participant) => (
+              <ListItem key={participant.user._id}>
+                <ListItemAvatar>
+                  <Avatar src={participant.user.avatar} alt={participant.user.name} />
+                </ListItemAvatar>
+                <ListItemText
+                  primary={participant.user.name}
+                  secondary={participant.user.email}
+                />
+                <ListItemSecondaryAction>
+                  <IconButton
+                    edge="end"
+                    onClick={() => handleRemoveParticipant(participant.user._id)}
+                    color="error"
+                    disabled={status !== "connected"}
+                  >
+                    <PersonRemove />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   const getStatusIcon = () => {
-    switch (connectionStatus) {
+    switch (status) {
       case "connected":
         return <CheckCircle fontSize="small" />;
-      case "connecting":
+      case "ready":
         return <CircularProgress size={20} />;
       case "ended":
-        return <WarningAmber fontSize="small" />;
+        return <ErrorOutline fontSize="small" />;
       default:
         return <ErrorOutline fontSize="small" />;
     }
   };
 
+  const toggleCamera = () => {
+    if (localStreamRef.current?.videoTrack) {
+      const newState = !cameraEnabled;
+      localStreamRef.current.videoTrack.setEnabled(newState);
+      setCameraEnabled(newState);
+    }
+  };
+
+  const toggleMic = () => {
+    if (localStreamRef.current?.audioTrack) {
+      const newState = !micEnabled;
+      localStreamRef.current.audioTrack.setEnabled(newState);
+      setMicEnabled(newState);
+    }
+  };
+
+  const handleGoLive = () => {
+    socketRef.current.emit("go-live", { lectureId, isResume: false });
+  };
+
   return (
-    <Box sx={{ p: 3, maxWidth: 1200, margin: "0 auto" }}>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }} elevation={3}>
-            <Box display="flex" alignItems="center" mb={2}>
-              <Typography variant="h4" component="h1">
-                Live Lecture Control Panel
-              </Typography>
-              <StatusChip
-                label={connectionStatus.toUpperCase()}
-                status={connectionStatus}
-                icon={getStatusIcon()}
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+        <Box display="flex" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
+            Live Lecture Controller
+          </Typography>
+          <Chip
+            label={status.toUpperCase()}
+            color={
+              status === "connected"
+                ? "success"
+                : status === "ready"
+                ? "warning"
+                : "error"
+            }
+            icon={getStatusIcon()}
+            sx={{ ml: 2 }}
+          />
+        </Box>
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={8}>
+            <Card sx={{ height: 500, bgcolor: "background.default" }}>
+              <div
+                ref={videoContainerRef}
+                style={{ width: "100%", height: "100%" }}
               />
-            </Box>
-            
-            <Divider sx={{ my: 2 }} />
+              {status !== "connected" && (
+                <Box
+                  position="absolute"
+                  top="50%"
+                  left="50%"
+                  sx={{
+                    transform: "translate(-50%, -50%)",
+                    textAlign: "center",
+                    color: "text.secondary",
+                  }}
+                >
+                  <LiveTv sx={{ fontSize: 80, mb: 2 }} />
+                  <Typography variant="h6">
+                    {status === "ready" && "Ready to start broadcast"}
+                    {status === "ended" && "Lecture session ended"}
+                    {status === "disconnected" && "Not connected"}
+                  </Typography>
+                </Box>
+              )}
+            </Card>
+          </Grid>
 
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={8}>
-                <StyledVideoContainer ref={videoContainerRef}>
-                  {connectionStatus !== "connected" && (
-                    <Box
-                      position="absolute"
-                      top="50%"
-                      left="50%"
-                      sx={{ transform: "translate(-50%, -50%)" }}
-                      color="common.white"
-                      textAlign="center"
+          <Grid item xs={12} md={4}>
+            <Card sx={{ mb: 2 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Lecture Information
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Lecture ID: {lectureId}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Channel: {channelName || "N/A"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Status: {status}
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Paper sx={{ p: 2, borderRadius: 2 }}>
+              <Grid container spacing={2} justifyContent="center">
+                <Grid item>
+                  <IconButton
+                    color={cameraEnabled ? "primary" : "default"}
+                    onClick={toggleCamera}
+                    disabled={status !== "connected"}
+                  >
+                    {cameraEnabled ? <Videocam /> : <VideocamOff />}
+                  </IconButton>
+                </Grid>
+                <Grid item>
+                  <IconButton
+                    color={micEnabled ? "primary" : "default"}
+                    onClick={toggleMic}
+                    disabled={status !== "connected"}
+                  >
+                    {micEnabled ? <Mic /> : <MicOff />}
+                  </IconButton>
+                </Grid>
+
+                {status === "ready" ? (
+                  <Grid item xs={12}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      color="secondary"
+                      onClick={startBroadcast}
+                      sx={{ height: 48 }}
                     >
-                      {connectionStatus === "failed" && (
-                        <ErrorOutline fontSize="large" />
-                      )}
-                      <Typography variant="h6">
-                        {connectionStatus === "failed" && "Connection Failed"}
-                        {connectionStatus === "connecting" && "Initializing Broadcast..."}
-                        {connectionStatus === "ended" && "Lecture Has Ended"}
-                      </Typography>
-                    </Box>
-                  )}
-                </StyledVideoContainer>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Lecture Information
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Lecture ID: {lectureId}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Channel: {channelName || "Not connected"}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Agora Token: {agoraToken ? "Configured" : "Not available"}
-                    </Typography>
-                  </CardContent>
-                </Card>
-
-                <ControlBar elevation={1}>
-                  <Grid container spacing={1} justifyContent="center">
-                    <Grid item>
-                      <Tooltip title={cameraEnabled ? "Disable Camera" : "Enable Camera"}>
-                        <IconButton
-                          color={cameraEnabled ? "primary" : "default"}
-                          onClick={toggleCamera}
-                          disabled={connectionStatus !== "connected"}
-                        >
-                          {cameraEnabled ? <Videocam /> : <VideocamOff />}
-                        </IconButton>
-                      </Tooltip>
-                    </Grid>
-
-                    <Grid item>
-                      <Tooltip title={micEnabled ? "Mute Microphone" : "Unmute Microphone"}>
-                        <IconButton
-                          color={micEnabled ? "primary" : "default"}
-                          onClick={toggleMic}
-                          disabled={connectionStatus !== "connected"}
-                        >
-                          {micEnabled ? <Mic /> : <MicOff />}
-                        </IconButton>
-                      </Tooltip>
-                    </Grid>
-
-                    <Grid item>
-                      <Button
-                        variant="contained"
-                        color={connectionStatus === "connected" ? "error" : "primary"}
-                        startIcon={connectionStatus === "connected" ? <StopCircle /> : <LiveTv />}
-                        onClick={connectionStatus === "connected" ? handleEndLecture : handleGoLive}
-                        disabled={loading || !channelName}
-                        sx={{ minWidth: 140 }}
-                      >
-                        {loading ? (
-                          <CircularProgress size={24} />
-                        ) : connectionStatus === "connected" ? (
-                          "End Lecture"
-                        ) : (
-                          "Go Live"
-                        )}
-                      </Button>
-                    </Grid>
+                      Start Broadcast
+                    </Button>
                   </Grid>
-                </ControlBar>
+                ) : (
+                  <Grid item xs={12}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      color={status === "connected" ? "error" : "primary"}
+                      startIcon={
+                        status === "connected" ? <StopCircle /> : <LiveTv />
+                      }
+                      onClick={status === "connected" ? stopBroadcast : handleGoLive}
+                      disabled={loading}
+                      sx={{ height: 48 }}
+                    >
+                      {loading ? (
+                        <CircularProgress size={24} />
+                      ) : status === "connected" ? (
+                        "End Lecture"
+                      ) : (
+                        "Go Live"
+                      )}
+                    </Button>
+                  </Grid>
+                )}
               </Grid>
-            </Grid>
-          </Paper>
+            </Paper>
+            <ParticipantList />
+          </Grid>
         </Grid>
-      </Grid>
+      </Paper>
 
       <Snackbar
-        open={!!message}
+        open={snackbarOpen}
         autoHideDuration={6000}
-        onClose={() => setMessage("")}
+        onClose={() => setSnackbarOpen(false)}
         message={message}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       />
-
-      {agoraToken && connectionStatus === "connecting" && (
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={startAgoraBroadcast}
-          sx={{ mt: 2, display: "block", mx: "auto" }}
-        >
-          Start Broadcast
-        </Button>
-      )}
-    </Box>
+    </Container>
   );
 };
 

@@ -32,6 +32,7 @@ import {
   StopCircle,
   CheckCircle,
   ErrorOutline,
+  DeleteOutline,
 } from "@mui/icons-material";
 
 const TeacherLiveLecture = () => {
@@ -47,7 +48,7 @@ const TeacherLiveLecture = () => {
   const [participants, setParticipants] = useState([]);
   const [participantCount, setParticipantCount] = useState(0);
   const [activeUsers, setActiveUsers] = useState(new Map());
-console.log(participants,"participant")
+
   const localStreamRef = useRef(null);
   const clientRef = useRef(null);
   const socketRef = useRef(null);
@@ -70,14 +71,12 @@ console.log(participants,"participant")
     socketRef.current = newSocket;
 
     const handleConnect = () => {
-      console.log("Connected to socket:", newSocket.id);
       if (lectureId) {
         newSocket.emit("request-participants", lectureId);
       }
     };
 
     const handleParticipantsUpdate = (data) => {
-      console.log("Received participants:", data);
       setParticipants(data.participants);
       setParticipantCount(data.count);
     };
@@ -250,6 +249,11 @@ console.log(participants,"participant")
     socketRef.current.emit("go-live", { lectureId, isResume: false });
   };
 
+  const handleRemoveParticipant = (userId) => {
+    if (!userId) return;
+    socketRef.current.emit("remove-participant", { lectureId, userId });
+  };
+
   const getStatusIcon = () => {
     switch (status) {
       case "connected":
@@ -265,14 +269,9 @@ console.log(participants,"participant")
 
   const getParticipantStatus = (userId) => {
     return Array.from(activeUsers.values()).some(
-      (u) => u.uid === userId.toString()
+      (u) => u.uid === userId?.toString()
     );
   };
-
-  const mergedParticipants = participants.map((p) => ({
-    ...p,
-    isOnline: getParticipantStatus(p.userId),
-  }));
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -429,7 +428,7 @@ console.log(participants,"participant")
                     "&::-webkit-scrollbar-thumb": { backgroundColor: "#888" },
                   }}
                 >
-                  {mergedParticipants.length === 0 ? (
+                  {participants.length === 0 ? (
                     <Typography
                       variant="body2"
                       color="text.secondary"
@@ -438,29 +437,67 @@ console.log(participants,"participant")
                       No participants yet
                     </Typography>
                   ) : (
-                    mergedParticipants.map((participant) => (
-                      <ListItem key={participant._id} sx={{ py: 1 }}>
+                    participants.map((participant) => (
+                      <ListItem key={participant.user?._id} sx={{ py: 1 }}>
                         <ListItemAvatar>
                           <Avatar
                             src={participant.user?.avatar}
                             sx={{
-                              bgcolor: participant.isOnline
+                              bgcolor: getParticipantStatus(participant.user?._id)
                                 ? "success.main"
                                 : "grey.500",
                             }}
                           >
-                            {participant.user?.name?.charAt(0)}
+                            {participant.user?.name?.charAt(0) || "U"}
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
-                          primary={participant.user?.name}
-                          secondary={participant.user?.email}
+                          primary={participant.user?.name || "Anonymous User"}
+                          secondary={
+                            <>
+                              {participant.user?.email && (
+                                <Typography
+                                  variant="body2"
+                                  component="span"
+                                  display="block"
+                                >
+                                  {participant.user.email}
+                                </Typography>
+                              )}
+                              <Typography
+                                variant="caption"
+                                component="span"
+                                display="block"
+                              >
+                                ID: {participant.user?._id}
+                              </Typography>
+                            </>
+                          }
                         />
-                        <Chip
-                          label={participant.isOnline ? "Online" : "Offline"}
-                          color={participant.isOnline ? "success" : "default"}
-                          size="small"
-                        />
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Chip
+                            label={
+                              getParticipantStatus(participant.user?._id)
+                                ? "Online"
+                                : "Offline"
+                            }
+                            color={
+                              getParticipantStatus(participant.user?._id)
+                                ? "success"
+                                : "default"
+                            }
+                            size="small"
+                          />
+                          <IconButton
+                            onClick={() =>
+                              handleRemoveParticipant(participant.user?._id)
+                            }
+                            size="small"
+                            color="error"
+                          >
+                            <DeleteOutline fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </ListItem>
                     ))
                   )}

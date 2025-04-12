@@ -79,6 +79,7 @@ const TeacherLiveLecture = () => {
     const handleParticipantsUpdate = (data) => {
       setParticipants(data.participants);
       setParticipantCount(data.count);
+      
     };
 
     const handleGoLiveSuccess = (data) => {
@@ -479,12 +480,12 @@ const TeacherLiveLecture = () => {
                         <Box display="flex" alignItems="center" gap={1}>
                           <Chip
                             label={
-                              getParticipantStatus(participant.user?._id)
+                              participant.user?._id
                                 ? "Online"
                                 : "Offline"
                             }
                             color={
-                              getParticipantStatus(participant.user?._id)
+                              participant.user?._id
                                 ? "success"
                                 : "default"
                             }

@@ -90,7 +90,9 @@ const TeacherLiveLecture = () => {
     };
 
     const handleLectureUpdate = (data) => {
-      setStatus(data.status);
+      if (data.status === "connected") {
+        setStatus("connected");
+      }
       setMessage(data.message);
     };
 

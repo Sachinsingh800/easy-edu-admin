@@ -3,37 +3,8 @@ import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import Cookies from "js-cookie";
-import {
-  Box,
-  Button,
-  Container,
-  Paper,
-  Typography,
-  IconButton,
-  Chip,
-  Snackbar,
-  Grid,
-  Card,
-  CardContent,
-  CircularProgress,
-  Divider,
-  Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-} from "@mui/material";
-import {
-  Videocam,
-  VideocamOff,
-  Mic,
-  MicOff,
-  LiveTv,
-  StopCircle,
-  CheckCircle,
-  ErrorOutline,
-  DeleteOutline,
-} from "@mui/icons-material";
+import { Box, Button, Container, Paper, Typography, IconButton, Chip, Snackbar, Grid, Card, CardContent, CircularProgress, Divider, Avatar, List, ListItem, ListItemAvatar, ListItemText } from "@mui/material";
+import { Videocam, VideocamOff, Mic, MicOff, LiveTv, StopCircle, CheckCircle, ErrorOutline, DeleteOutline, VolumeUp, VolumeOff } from "@mui/icons-material";
 
 const TeacherLiveLecture = () => {
   const { lectureId } = useParams();
@@ -49,6 +20,7 @@ const TeacherLiveLecture = () => {
   const [participantCount, setParticipantCount] = useState(0);
   const [activeUsers, setActiveUsers] = useState(new Map());
   const [mutedStudents, setMutedStudents] = useState(new Set());
+  const [enableSound, setEnableSound] = useState(true);
 
   const localStreamRef = useRef(null);
   const clientRef = useRef(null);
@@ -61,15 +33,11 @@ const TeacherLiveLecture = () => {
   const token = Cookies.get("token");
 
   useEffect(() => {
-    // Initialize audio feedback
     muteSoundRef.current = new Audio("/sounds/mute-sound.mp3");
     unmuteSoundRef.current = new Audio("/sounds/unmute-sound.mp3");
-    
+
     const newSocket = io("https://lmsapp-plvj.onrender.com", {
-      auth: {
-        token: token,
-        userType: "admin",
-      },
+      auth: { token, userType: "admin" },
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 3000,
@@ -78,9 +46,7 @@ const TeacherLiveLecture = () => {
     socketRef.current = newSocket;
 
     const handleConnect = () => {
-      if (lectureId) {
-        newSocket.emit("request-participants", lectureId);
-      }
+      if (lectureId) newSocket.emit("request-participants", lectureId);
     };
 
     const handleParticipantsUpdate = (data) => {
@@ -97,9 +63,7 @@ const TeacherLiveLecture = () => {
     };
 
     const handleLectureUpdate = (data) => {
-      if (data.status === "connected") {
-        setStatus("connected");
-      }
+      if (data.status === "connected") setStatus("connected");
       setMessage(data.message);
     };
 
@@ -138,6 +102,26 @@ const TeacherLiveLecture = () => {
     };
   }, [lectureId, token]);
 
+  const handleToggleMute = (userId) => {
+    if (!userId) return;
+    const isMuted = mutedStudents.has(userId);
+
+    if (enableSound) {
+      (isMuted ? unmuteSoundRef : muteSoundRef).current.play().catch(() => {});
+    }
+
+    setMutedStudents(prev => {
+      const newSet = new Set(prev);
+      isMuted ? newSet.delete(userId) : newSet.add(userId);
+      return newSet;
+    });
+
+    socketRef.current.emit(isMuted ? "unmute-student" : "mute-student", {
+      lectureId,
+      userId
+    });
+  };
+
   const initializeAgora = async () => {
     const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
     clientRef.current = client;
@@ -157,19 +141,15 @@ const TeacherLiveLecture = () => {
       user.videoTrack.play(remotePlayerContainer);
     }
 
-    setActiveUsers((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(user.uid, {
-        uid: user.uid,
-        hasAudio: user.hasAudio,
-        hasVideo: user.hasVideo,
-      });
-      return newMap;
-    });
+    setActiveUsers(prev => new Map(prev.set(user.uid, {
+      uid: user.uid,
+      hasAudio: user.hasAudio,
+      hasVideo: user.hasVideo,
+    })));
   };
 
   const handleUserUnpublished = (user) => {
-    setActiveUsers((prev) => {
+    setActiveUsers(prev => {
       const newMap = new Map(prev);
       newMap.delete(user.uid);
       return newMap;
@@ -189,21 +169,12 @@ const TeacherLiveLecture = () => {
       client.on("user-mute-audio", (user, muted) => {
         setMutedStudents(prev => {
           const newSet = new Set(prev);
-          if (muted) {
-            newSet.add(user.uid);
-          } else {
-            newSet.delete(user.uid);
-          }
+          muted ? newSet.add(user.uid) : newSet.delete(user.uid);
           return newSet;
         });
       });
 
-      await client.join(
-        "90dde3ee5fbc4fe5a6a876e972c7bb2a",
-        channelName,
-        agoraToken,
-        uid
-      );
+      await client.join("90dde3ee5fbc4fe5a6a876e972c7bb2a", channelName, agoraToken, uid);
 
       const [audioTrack, videoTrack] = await Promise.all([
         AgoraRTC.createMicrophoneAudioTrack(),
@@ -276,59 +247,17 @@ const TeacherLiveLecture = () => {
     socketRef.current.emit("remove-participant", { lectureId, userId });
   };
 
-  const handleToggleMute = (userId) => {
-    if (!userId || !clientRef.current) return;
-    const isMuted = mutedStudents.has(userId);
-    
-    clientRef.current.muteRemoteAudio(userId, !isMuted)
-      .then(() => {
-        // Play sound feedback
-        if (!isMuted) {
-          muteSoundRef.current.play();
-        } else {
-          unmuteSoundRef.current.play();
-        }
-
-        // Update local state
-        setMutedStudents(prev => {
-          const newSet = new Set(prev);
-          if (!isMuted) {
-            newSet.add(userId);
-          } else {
-            newSet.delete(userId);
-          }
-          return newSet;
-        });
-
-        // Emit socket event
-        const event = isMuted ? 'unmute-student' : 'mute-student';
-        socketRef.current.emit(event, { lectureId, userId });
-      })
-      .catch(error => {
-        console.error('Error toggling mute:', error);
-        setMessage(`Error toggling audio: ${error.message}`);
-        setSnackbarOpen(true);
-      });
-  };
-
   const getStatusIcon = () => {
     switch (status) {
-      case "connected":
-        return <CheckCircle fontSize="small" />;
-      case "ready":
-        return <CircularProgress size={20} />;
-      case "ended":
-        return <ErrorOutline fontSize="small" />;
-      default:
-        return <ErrorOutline fontSize="small" />;
+      case "connected": return <CheckCircle fontSize="small" />;
+      case "ready": return <CircularProgress size={20} />;
+      case "ended": return <ErrorOutline fontSize="small" />;
+      default: return <ErrorOutline fontSize="small" />;
     }
   };
 
-  const getParticipantStatus = (userId) => {
-    return Array.from(activeUsers.values()).some(
-      (u) => u.uid === userId?.toString()
-    );
-  };
+  const getParticipantStatus = (userId) => 
+    Array.from(activeUsers.values()).some(u => u.uid === userId?.toString());
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -339,13 +268,7 @@ const TeacherLiveLecture = () => {
           </Typography>
           <Chip
             label={status.toUpperCase()}
-            color={
-              status === "connected"
-                ? "success"
-                : status === "ready"
-                ? "warning"
-                : "error"
-            }
+            color={status === "connected" ? "success" : status === "ready" ? "warning" : "error"}
             icon={getStatusIcon()}
             sx={{ ml: 2 }}
           />
@@ -367,16 +290,7 @@ const TeacherLiveLecture = () => {
                 }}
               />
               {status !== "connected" && (
-                <Box
-                  position="absolute"
-                  top="50%"
-                  left="50%"
-                  sx={{
-                    transform: "translate(-50%, -50%)",
-                    textAlign: "center",
-                    color: "text.secondary",
-                  }}
-                >
+                <Box position="absolute" top="50%" left="50%" sx={{ transform: "translate(-50%, -50%)", textAlign: "center", color: "text.secondary" }}>
                   <LiveTv sx={{ fontSize: 80, mb: 2 }} />
                   <Typography variant="h6">
                     {status === "ready" && "Ready to start broadcast"}
@@ -391,9 +305,7 @@ const TeacherLiveLecture = () => {
           <Grid item xs={12} md={4}>
             <Card sx={{ mb: 2 }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Lecture Information
-                </Typography>
+                <Typography variant="h6" gutterBottom>Lecture Information</Typography>
                 <Divider sx={{ mb: 2 }} />
                 <Typography variant="body2" color="text.secondary">
                   Lecture ID: {lectureId}
@@ -430,6 +342,14 @@ const TeacherLiveLecture = () => {
                     {micEnabled ? <Mic /> : <MicOff />}
                   </IconButton>
                 </Grid>
+                <Grid item>
+                  <IconButton
+                    color={enableSound ? "primary" : "default"}
+                    onClick={() => setEnableSound(!enableSound)}
+                  >
+                    {enableSound ? <VolumeUp /> : <VolumeOff />}
+                  </IconButton>
+                </Grid>
 
                 {status === "ready" ? (
                   <Grid item xs={12}>
@@ -449,22 +369,12 @@ const TeacherLiveLecture = () => {
                       fullWidth
                       variant="contained"
                       color={status === "connected" ? "error" : "primary"}
-                      startIcon={
-                        status === "connected" ? <StopCircle /> : <LiveTv />
-                      }
-                      onClick={
-                        status === "connected" ? stopBroadcast : handleGoLive
-                      }
+                      startIcon={status === "connected" ? <StopCircle /> : <LiveTv />}
+                      onClick={status === "connected" ? stopBroadcast : handleGoLive}
                       disabled={loading}
                       sx={{ height: 48 }}
                     >
-                      {loading ? (
-                        <CircularProgress size={24} />
-                      ) : status === "connected" ? (
-                        "End Lecture"
-                      ) : (
-                        "Go Live"
-                      )}
+                      {loading ? <CircularProgress size={24} /> : status === "connected" ? "End Lecture" : "Go Live"}
                     </Button>
                   </Grid>
                 )}
@@ -477,20 +387,9 @@ const TeacherLiveLecture = () => {
                   Participants ({participantCount})
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                <List
-                  sx={{
-                    height: 300,
-                    overflow: "auto",
-                    "&::-webkit-scrollbar": { width: "6px" },
-                    "&::-webkit-scrollbar-thumb": { backgroundColor: "#888" },
-                  }}
-                >
+                <List sx={{ height: 300, overflow: "auto" }}>
                   {participants.length === 0 ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ p: 2 }}
-                    >
+                    <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
                       No participants yet
                     </Typography>
                   ) : (
@@ -499,50 +398,28 @@ const TeacherLiveLecture = () => {
                         <ListItemAvatar>
                           <Avatar
                             src={participant.user?.avatar}
-                            sx={{
-                              bgcolor: getParticipantStatus(participant.user?._id)
-                                ? "success.main"
-                                : "grey.500",
-                            }}
+                            sx={{ bgcolor: getParticipantStatus(participant.user?._id) ? "success.main" : "grey.500" }}
                           >
                             {participant.user?.name?.charAt(0) || "U"}
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
                           primary={participant.user?.name || "Anonymous User"}
-                          secondary={
-                            <>
-                              {participant.user?.email && (
-                                <Typography
-                                  variant="body2"
-                                  component="span"
-                                  display="block"
-                                >
-                                  {participant.user.email}
-                                </Typography>
-                              )}
-                              <Typography
-                                variant="caption"
-                                component="span"
-                                display="block"
-                              >
-                                ID: {participant.user?._id}
+                          secondary={<>
+                            {participant.user?.email && (
+                              <Typography variant="body2" component="span" display="block">
+                                {participant.user.email}
                               </Typography>
-                            </>
-                          }
+                            )}
+                            <Typography variant="caption" component="span" display="block">
+                              ID: {participant.user?._id}
+                            </Typography>
+                          </>}
                         />
                         <Box display="flex" alignItems="center" gap={1}>
                           <Chip
-                            label={
-                              participant.user?._id
-                                ? "Online"
-                                : "Offline"
-                            }
-                            color={
-                              participant.user?._id
-                                ? "success"
-                                : "default"
-                            }
+                            label={participant.user?._id ? "Online" : "Offline"}
+                            color={participant.user?._id ? "success" : "default"}
                             size="small"
                           />
                           <IconButton
@@ -550,16 +427,10 @@ const TeacherLiveLecture = () => {
                             size="small"
                             color={mutedStudents.has(participant.user?._id) ? "error" : "default"}
                           >
-                            {mutedStudents.has(participant.user?._id) ? (
-                              <MicOff fontSize="small" />
-                            ) : (
-                              <Mic fontSize="small" />
-                            )}
+                            {mutedStudents.has(participant.user?._id) ? <MicOff fontSize="small" /> : <Mic fontSize="small" />}
                           </IconButton>
                           <IconButton
-                            onClick={() =>
-                              handleRemoveParticipant(participant.user?._id)
-                            }
+                            onClick={() => handleRemoveParticipant(participant.user?._id)}
                             size="small"
                             color="error"
                           >

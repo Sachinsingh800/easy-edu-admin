@@ -28,6 +28,7 @@ const TeacherLiveLecture = () => {
   const videoContainerRef = useRef(null);
   const muteSoundRef = useRef(null);
   const unmuteSoundRef = useRef(null);
+  const audioTracksRef = useRef(new Map());
 
   const profile = JSON.parse(localStorage.getItem("profile"));
   const token = Cookies.get("token");
@@ -131,6 +132,7 @@ const TeacherLiveLecture = () => {
 
   const handleUserPublished = async (user, mediaType) => {
     await clientRef.current.subscribe(user, mediaType);
+    
     if (mediaType === "video") {
       const remotePlayerContainer = document.createElement("div");
       remotePlayerContainer.id = user.uid;
@@ -139,6 +141,11 @@ const TeacherLiveLecture = () => {
       remotePlayerContainer.style.margin = "10px";
       videoContainerRef.current.appendChild(remotePlayerContainer);
       user.videoTrack.play(remotePlayerContainer);
+    }
+
+    if (mediaType === "audio") {
+      audioTracksRef.current.set(user.uid, user.audioTrack);
+      user.audioTrack.play();
     }
 
     setActiveUsers(prev => new Map(prev.set(user.uid, {
@@ -156,6 +163,7 @@ const TeacherLiveLecture = () => {
     });
     const element = document.getElementById(user.uid);
     if (element) element.remove();
+    audioTracksRef.current.delete(user.uid);
   };
 
   const startBroadcast = async () => {

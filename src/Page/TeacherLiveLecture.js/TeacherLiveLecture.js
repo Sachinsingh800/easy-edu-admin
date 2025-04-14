@@ -54,11 +54,17 @@ const TeacherLiveLecture = () => {
   const clientRef = useRef(null);
   const socketRef = useRef(null);
   const videoContainerRef = useRef(null);
+  const muteSoundRef = useRef(null);
+  const unmuteSoundRef = useRef(null);
 
   const profile = JSON.parse(localStorage.getItem("profile"));
   const token = Cookies.get("token");
 
   useEffect(() => {
+    // Initialize audio feedback
+    muteSoundRef.current = new Audio("/sounds/mute-sound.mp3");
+    unmuteSoundRef.current = new Audio("/sounds/unmute-sound.mp3");
+    
     const newSocket = io("https://lmsapp-plvj.onrender.com", {
       auth: {
         token: token,
@@ -180,6 +186,17 @@ const TeacherLiveLecture = () => {
 
       client.on("user-published", handleUserPublished);
       client.on("user-unpublished", handleUserUnpublished);
+      client.on("user-mute-audio", (user, muted) => {
+        setMutedStudents(prev => {
+          const newSet = new Set(prev);
+          if (muted) {
+            newSet.add(user.uid);
+          } else {
+            newSet.delete(user.uid);
+          }
+          return newSet;
+        });
+      });
 
       await client.join(
         "90dde3ee5fbc4fe5a6a876e972c7bb2a",
@@ -214,6 +231,7 @@ const TeacherLiveLecture = () => {
       if (clientRef.current) {
         clientRef.current.off("user-published", handleUserPublished);
         clientRef.current.off("user-unpublished", handleUserUnpublished);
+        clientRef.current.off("user-mute-audio");
         await clientRef.current.leave();
         clientRef.current = null;
       }
@@ -259,20 +277,38 @@ const TeacherLiveLecture = () => {
   };
 
   const handleToggleMute = (userId) => {
-    if (!userId) return;
+    if (!userId || !clientRef.current) return;
     const isMuted = mutedStudents.has(userId);
     
-    if (isMuted) {
-      socketRef.current.emit("unmute-student", { lectureId, userId });
-      setMutedStudents(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(userId);
-        return newSet;
+    clientRef.current.muteRemoteAudio(userId, !isMuted)
+      .then(() => {
+        // Play sound feedback
+        if (!isMuted) {
+          muteSoundRef.current.play();
+        } else {
+          unmuteSoundRef.current.play();
+        }
+
+        // Update local state
+        setMutedStudents(prev => {
+          const newSet = new Set(prev);
+          if (!isMuted) {
+            newSet.add(userId);
+          } else {
+            newSet.delete(userId);
+          }
+          return newSet;
+        });
+
+        // Emit socket event
+        const event = isMuted ? 'unmute-student' : 'mute-student';
+        socketRef.current.emit(event, { lectureId, userId });
+      })
+      .catch(error => {
+        console.error('Error toggling mute:', error);
+        setMessage(`Error toggling audio: ${error.message}`);
+        setSnackbarOpen(true);
       });
-    } else {
-      socketRef.current.emit("mute-student", { lectureId, userId });
-      setMutedStudents(prev => new Set([...prev, userId]));
-    }
   };
 
   const getStatusIcon = () => {

@@ -48,6 +48,7 @@ const TeacherLiveLecture = () => {
   const [participants, setParticipants] = useState([]);
   const [participantCount, setParticipantCount] = useState(0);
   const [activeUsers, setActiveUsers] = useState(new Map());
+  const [mutedStudents, setMutedStudents] = useState(new Set());
 
   const localStreamRef = useRef(null);
   const clientRef = useRef(null);
@@ -79,7 +80,6 @@ const TeacherLiveLecture = () => {
     const handleParticipantsUpdate = (data) => {
       setParticipants(data.participants);
       setParticipantCount(data.count);
-      
     };
 
     const handleGoLiveSuccess = (data) => {
@@ -223,6 +223,7 @@ const TeacherLiveLecture = () => {
         localStreamRef.current = null;
       }
       setActiveUsers(new Map());
+      setMutedStudents(new Set());
       setStatus("disconnected");
       socketRef.current.emit("end-lecture", lectureId);
     } catch (error) {
@@ -255,6 +256,23 @@ const TeacherLiveLecture = () => {
   const handleRemoveParticipant = (userId) => {
     if (!userId) return;
     socketRef.current.emit("remove-participant", { lectureId, userId });
+  };
+
+  const handleToggleMute = (userId) => {
+    if (!userId) return;
+    const isMuted = mutedStudents.has(userId);
+    
+    if (isMuted) {
+      socketRef.current.emit("unmute-student", { lectureId, userId });
+      setMutedStudents(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+    } else {
+      socketRef.current.emit("mute-student", { lectureId, userId });
+      setMutedStudents(prev => new Set([...prev, userId]));
+    }
   };
 
   const getStatusIcon = () => {
@@ -491,6 +509,17 @@ const TeacherLiveLecture = () => {
                             }
                             size="small"
                           />
+                          <IconButton
+                            onClick={() => handleToggleMute(participant.user?._id)}
+                            size="small"
+                            color={mutedStudents.has(participant.user?._id) ? "error" : "default"}
+                          >
+                            {mutedStudents.has(participant.user?._id) ? (
+                              <MicOff fontSize="small" />
+                            ) : (
+                              <Mic fontSize="small" />
+                            )}
+                          </IconButton>
                           <IconButton
                             onClick={() =>
                               handleRemoveParticipant(participant.user?._id)

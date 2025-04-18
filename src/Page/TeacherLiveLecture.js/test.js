@@ -62,9 +62,6 @@ socket.on("unmute-student", ({ lectureId, userId }) => {
 // --------------------------
 socket.on("student-unmute-request", () => {
   if (socket.user) {
-    console.log(
-      Student ${socket.user._id} attempted self-unmute, which is blocked.
-    );
     socket.emit("unmute-blocked", {
       unmuteBlocked: true,
       mute: true,
@@ -83,7 +80,7 @@ socket.on("unblock-student", ({ lectureId, userId }) => {
     console.log(Admin ${socket.admin._id} unblocking student ${userId});
     io.to(userId).emit("audio-control", {
       unmuteBlocked: false,
-      // mute: true,
+      mute: true,
       lectureId,
       message: "Admin has unblocked your unmute. You may now unmute.",
     });

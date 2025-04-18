@@ -46,6 +46,25 @@ const TeacherLiveLecture = () => {
   const profile = JSON.parse(localStorage.getItem("profile"));
   const token = Cookies.get("token");
 
+
+
+  // Audio control handlers
+  const handleBlockAll = () => {
+    socketRef.current.emit("block-all", { lectureId });
+    setMutedStudents(new Set([...mutedStudents, ...participants.map(p => p.user?._id)]));
+  };
+
+  const handleUnblockStudent = (userId) => {
+    socketRef.current.emit("unblock-student", { lectureId, userId });
+    setMutedStudents(prev => new Set([...prev].filter(id => id !== userId)));
+  };
+
+  const handleUnblockAll = () => {
+    socketRef.current.emit("unblock-all", { lectureId });
+    setMutedStudents(new Set());
+  };
+
+
   // Handle sound control for all audio tracks
   useEffect(() => {
     
@@ -370,6 +389,9 @@ const TeacherLiveLecture = () => {
               handleToggleMute={handleToggleMute}
               handleRemoveParticipant={handleRemoveParticipant}
               getParticipantStatus={getParticipantStatus}
+              handleUnblockStudent={handleUnblockStudent}
+              handleUnblockAll={handleUnblockAll}
+              handleBlockAll={handleBlockAll}
             />
           </Grid>
         </Grid>

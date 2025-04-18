@@ -1,252 +1,169 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
-import { io } from "socket.io-client";
-import AgoraRTC from "agora-rtc-sdk-ng";
-import Cookies from "js-cookie";
-import {
-  Box,
-  Button,
-  Container,
-  Paper,
-  Typography,
-  IconButton,
-  Chip,
-  Snackbar,
-  Grid,
-  Card,
-  CardContent,
-  CircularProgress,
-  Divider,
-  Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-} from "@mui/material";
-import {
-  Videocam,
-  VideocamOff,
-  Mic,
-  MicOff,
-  LiveTv,
-  StopCircle,
-  CheckCircle,
-  ErrorOutline,
-  DeleteOutline,
-} from "@mui/icons-material";
-
-const TeacherLiveLecture = () => {
-  const { lectureId } = useParams();
-  const [status, setStatus] = useState("disconnected");
-  const [channelName, setChannelName] = useState("");
-  const [agoraToken, setAgoraToken] = useState("");
-  const [message, setMessage] = useState("");
-  const [cameraEnabled, setCameraEnabled] = useState(true);
-  const [micEnabled, setMicEnabled] = useState(true);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [participants, setParticipants] = useState([]);
-  const [participantCount, setParticipantCount] = useState(0);
-  const [activeUsers, setActiveUsers] = useState(new Map());
-
-  const localStreamRef = useRef(null);
-  const clientRef = useRef(null);
-  const socketRef = useRef(null);
-  const videoContainerRef = useRef(null);
-
-  const profile = JSON.parse(localStorage.getItem("profile"));
-  const token = Cookies.get("token");
-
-  // Filter participants who haven't left (online participants)
-  const filteredParticipants = participants.filter(
-    (participant) => !participant.leftAt
+...   socket.on("mute-student", ({ lectureId, userId }) => {
+  console.log(
+    [mute-student] Received request: lectureId=${lectureId}, userId=${userId}, admin=${socket.admin}
   );
+  try {
+    // Check if the socket is authenticated as admin.
+    if (!socket.admin) {
+      console.error("[mute-student] Unauthorized access attempted");
+      throw new Error("Unauthorized access");
+    }
+    console.log("[mute-student] Authorized admin access confirmed");
 
-  useEffect(() => {
-    const newSocket = io("https://lmsapp-plvj.onrender.com", {
-      auth: {
-        token: token,
-        userType: "admin",
-      },
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
+    // Emit to the specified user to mute the microphone.
+    io.to(userId).emit("audio-control", {
+      mute: true,
+      lectureId,
+      message: "Your microphone has been muted by the admin.",
     });
+    console.log(
+      [mute-student] Mute command emitted to userId=${userId} for lectureId=${lectureId}
+    );
+  } catch (error) {
+    console.error([mute-student] Error: ${error.message});
+    handleError(error, "mute-student");
+  }
+});
 
-    socketRef.current = newSocket;
-
-    const handleConnect = () => {
-      if (lectureId) {
-        newSocket.emit("request-participants", lectureId);
-      }
-    };
-
-    const handleParticipantsUpdate = (data) => {
-      setParticipants(data.participants);
-      setParticipantCount(data.count);
-    };
-
-    const handleGoLiveSuccess = (data) => {
-      setAgoraToken(data.token);
-      setChannelName(data.channelName);
-      setStatus("ready");
-      setMessage("Lecture is live! Start your broadcast");
-      setSnackbarOpen(true);
-    };
-
-    const handleLectureUpdate = (data) => {
-      if (data.status === "connected") {
-        setStatus("connected");
-      }
-      setMessage(data.message);
-    };
-
-    const handleLectureEnded = (data) => {
-      setStatus("ended");
-      stopBroadcast();
-      setMessage("Lecture has ended");
-    };
-
-    const handleErrors = (error) => {
-      setMessage(error);
-      setSnackbarOpen(true);
-      setLoading(false);
-    };
-
-    newSocket.on("connect", handleConnect);
-    newSocket.on("participants-update", handleParticipantsUpdate);
-    newSocket.on("go-live-success", handleGoLiveSuccess);
-    newSocket.on("lecture-update", handleLectureUpdate);
-    newSocket.on("lecture-ended", handleLectureEnded);
-    newSocket.on("go-live-error", handleErrors);
-    newSocket.on("end-lecture-error", handleErrors);
-    newSocket.on("lecture-error", handleErrors);
-
-    return () => {
-      newSocket.disconnect();
-      newSocket.off("connect", handleConnect);
-      newSocket.off("participants-update", handleParticipantsUpdate);
-      newSocket.off("go-live-success", handleGoLiveSuccess);
-      newSocket.off("lecture-update", handleLectureUpdate);
-      newSocket.off("lecture-ended", handleLectureEnded);
-      newSocket.off("go-live-error", handleErrors);
-      newSocket.off("end-lecture-error", handleErrors);
-      newSocket.off("lecture-error", handleErrors);
-      stopBroadcast();
-    };
-  }, [lectureId, token]);
-
-  // Rest of the code remains the same until the return statement...
-
-  return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-        {/* Header remains same */}
-
-        <Grid container spacing={3}>
-          {/* Video column remains same */}
-
-          <Grid item xs={12} md={4}>
-            {/* Lecture info card remains same */}
-
-            {/* Controls remain same */}
-
-            <Card sx={{ mt: 2, height: 400 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Participants ({filteredParticipants.length})
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <List
-                  sx={{
-                    height: 300,
-                    overflow: "auto",
-                    "&::-webkit-scrollbar": { width: "6px" },
-                    "&::-webkit-scrollbar-thumb": { backgroundColor: "#888" },
-                  }}
-                >
-                  {filteredParticipants.length === 0 ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ p: 2 }}
-                    >
-                      No active participants
-                    </Typography>
-                  ) : (
-                    filteredParticipants.map((participant) => {
-                      const isOnline = getParticipantStatus(participant.user?._id);
-                      return (
-                        <ListItem key={participant._id} sx={{ py: 1 }}>
-                          <ListItemAvatar>
-                            <Avatar
-                              src={participant.user?.avatar}
-                              sx={{
-                                bgcolor: isOnline ? "success.main" : "grey.500",
-                              }}
-                            >
-                              {participant.user?.name?.charAt(0) || "U"}
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={participant.user?.name || "Anonymous User"}
-                            secondary={
-                              <>
-                                {participant.user?.email && (
-                                  <Typography
-                                    variant="body2"
-                                    component="span"
-                                    display="block"
-                                  >
-                                    {participant.user.email}
-                                  </Typography>
-                                )}
-                                <Typography
-                                  variant="caption"
-                                  component="span"
-                                  display="block"
-                                >
-                                  Joined: {new Date(participant.joinedAt).toLocaleTimeString()}
-                                </Typography>
-                              </>
-                            }
-                          />
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Chip
-                              label={isOnline ? "Online" : "Offline"}
-                              color={isOnline ? "success" : "default"}
-                              size="small"
-                            />
-                            <IconButton
-                              onClick={() =>
-                                handleRemoveParticipant(participant.user?._id)
-                              }
-                              size="small"
-                              color="error"
-                            >
-                              <DeleteOutline fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </ListItem>
-                      );
-                    })
-                  )}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={() => setSnackbarOpen(false)}
-          message={message}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        />
-      </Paper>
-    </Container>
+socket.on("unmute-student", ({ lectureId, userId }) => {
+  console.log(
+    [unmute-student] Received request: lectureId=${lectureId}, userId=${userId}, admin=${socket.admin}
   );
-};
+  try {
+    // Check if the socket is authenticated as admin.
+    if (!socket.admin) {
+      console.error("[unmute-student] Unauthorized access attempted");
+      throw new Error("Unauthorized access");
+    }
+    console.log("[unmute-student] Authorized admin access confirmed");
 
-export default TeacherLiveLecture;
+    // Emit to the specified user to unmute the microphone.
+    io.to(userId).emit("audio-control", {
+      mute: false,
+      lectureId,
+      message: "Your microphone has been enabled by the admin.",
+    });
+    console.log(
+      [unmute-student] Unmute command emitted to userId=${userId} for lectureId=${lectureId}
+    );
+  } catch (error) {
+    console.error([unmute-student] Error: ${error.message});
+    handleError(error, "unmute-student");
+  }
+});
+
+
+// strict mute All  // unmute desired
+
+// In Progress ...
+
+// --------------------------
+// Block Self-Unmute: If a student attempts to unmute themselves, block it.
+// --------------------------
+socket.on("student-unmute-request", () => {
+  if (socket.user) {
+    console.log(
+      Student ${socket.user._id} attempted self-unmute, which is blocked.
+    );
+    socket.emit("unmute-blocked", {
+      unmuteBlocked: true,
+      mute: true,
+      message:
+        "You are not allowed to unmute yourself. Please wait for admin permission.",
+    });
+  }
+});
+
+// --------------------------
+// Admin: Unblock unmute for a specific student
+// --------------------------
+socket.on("unblock-student", ({ lectureId, userId }) => {
+  try {
+    if (!socket.admin) throw new Error("Unauthorized access");
+    console.log(Admin ${socket.admin._id} unblocking student ${userId});
+    io.to(userId).emit("audio-control", {
+      unmuteBlocked: false,
+      // mute: true,
+      lectureId,
+      message: "Admin has unblocked your unmute. You may now unmute.",
+    });
+  } catch (error) {
+    handleError(error, "unblock-student");
+  }
+});
+
+// --------------------------
+// Admin: Unblock unmute for all students in a lecture
+// --------------------------
+socket.on("unblock-all", ({ lectureId }) => {
+  try {
+    if (!socket.admin) throw new Error("Unauthorized access");
+    console.log(
+      Admin ${socket.admin._id} unblocking unmute for all students in lecture ${lectureId}
+    );
+    io.to(lecture-${lectureId}).emit("audio-control", {
+      unmuteBlocked: false,
+      // mute: false,
+      lectureId,
+      message: "Admin has unblocked unmute for all. You may now unmute.",
+    });
+  } catch (error) {
+    handleError(error, "unblock-all");
+  }
+});
+
+// --------------------------
+// Disconnect handler: Update participant status and emit updated list
+// --------------------------
+socket.on("disconnect", async () => {
+  try {
+    console.log(Socket disconnected: ${socket.id});
+
+    if (socket.admin) {
+      const lectures = await courseLectureModel.find({
+        "liveDetails.teacher": socket.admin._id,
+        "liveDetails.status": "live",
+      });
+      for (const lecture of lectures) {
+        await courseLectureModel.findByIdAndUpdate(lecture._id, {
+          $set: { "liveDetails.status": "paused" },
+          $push: {
+            "liveDetails.connectionHistory": {
+              action: "disconnect",
+              timestamp: new Date(),
+            },
+          },
+        });
+        io.to(lecture-${lecture._id}).emit("lecture-update", {
+          status: "paused",
+          message: "Admin disconnected",
+          timestamp: new Date(),
+        });
+      }
+    }
+
+    if (socket.user) {
+      // Update this user's participant records as left (set leftAt).
+      await courseLectureModel.updateMany(
+        { "liveDetails.participants.user": socket.user._id },
+        { $set: { "liveDetails.participants.$[elem].leftAt": new Date() } },
+        { arrayFilters: [{ "elem.user": socket.user._id }] }
+      );
+      // For each lecture room that this socket was in, emit updated participants list.
+      const rooms = Array.from(socket.rooms).filter((room) =>
+        room.startsWith("lecture-")
+      );
+      for (const room of rooms) {
+        const lecId = room.split("-")[1];
+        await emitParticipantsUpdate(lecId);
+      }
+    }
+  } catch (error) {
+    console.error("Disconnect error:", error.message);
+  }
+});
+});
+
+httpServer.listen(port, () => {
+console.log(🚀 Server running on port ${port});
+});

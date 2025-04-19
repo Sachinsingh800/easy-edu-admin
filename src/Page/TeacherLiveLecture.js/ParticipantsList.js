@@ -26,80 +26,75 @@ const ParticipantListItem = ({
   participant,
   getParticipantStatus,
   mutedStudents,
-  handleToggleMute,
   handleRemoveParticipant,
   handleUnblockStudent,
-}) => (
-  <ListItem key={participant.user?._id} sx={{ py: 1 }}>
-    <ListItemAvatar>
-      <Avatar
-        src={participant.user?.avatar}
-        sx={{
-          bgcolor: getParticipantStatus(participant.user?._id)
-            ? "success.main"
-            : "grey.500",
-        }}
-      >
-        {participant.user?.name?.charAt(0) || "U"}
-      </Avatar>
-    </ListItemAvatar>
-    <ListItemText
-      primary={participant.user?.name || "Anonymous User"}
-      secondary={
-        <>
-          {participant.user?.email && (
-            <Typography variant="body2" component="span" display="block">
-              {participant.user.email}
+}) => {
+  const isMuted = mutedStudents.has(participant.user?._id);
+  
+  return (
+    <ListItem key={participant.user?._id} sx={{ py: 1 }}>
+      <ListItemAvatar>
+        <Avatar
+          src={participant.user?.avatar}
+          sx={{
+            bgcolor: getParticipantStatus(participant.user?._id)
+              ? "success.main"
+              : "grey.500",
+          }}
+        >
+          {participant.user?.name?.charAt(0) || "U"}
+        </Avatar>
+      </ListItemAvatar>
+      <ListItemText
+        primary={participant.user?.name || "Anonymous User"}
+        secondary={
+          <>
+            {participant.user?.email && (
+              <Typography variant="body2" component="span" display="block">
+                {participant.user.email}
+              </Typography>
+            )}
+            <Typography variant="caption" component="span" display="block">
+              ID: {participant.user?._id}
             </Typography>
-          )}
-          <Typography variant="caption" component="span" display="block">
-            ID: {participant.user?._id}
-          </Typography>
-        </>
-      }
-    />
-    <Box display="flex" alignItems="center" gap={1}>
-      <Chip
-        label={participant.user?._id ? "Online" : "Offline"}
-        color={participant.user?._id ? "success" : "default"}
-        size="small"
+          </>
+        }
       />
+      <Box display="flex" alignItems="center" gap={1}>
+        <Chip
+          label={participant.user?._id ? "Online" : "Offline"}
+          color={participant.user?._id ? "success" : "default"}
+          size="small"
+        />
 
-      <IconButton
-        onClick={() => handleUnblockStudent(participant.user?._id)}
-        size="small"
-        color="primary"
-      >
-        <LockOpen fontSize="small" />
-      </IconButton>
-      <IconButton
-        onClick={() => handleToggleMute(participant.user?._id)}
-        size="small"
-        color={mutedStudents.has(participant.user?._id) ? "error" : "default"}
-      >
-        {mutedStudents.has(participant.user?._id) ? (
-          <MicOff fontSize="small" />
-        ) : (
-          <Mic fontSize="small" />
-        )}
-      </IconButton>
-      <IconButton
-        onClick={() => handleRemoveParticipant(participant.user?._id)}
-        size="small"
-        color="error"
-      >
-        <DeleteOutline fontSize="small" />
-      </IconButton>
-    </Box>
-  </ListItem>
-);
+        <IconButton
+          onClick={() => handleUnblockStudent(participant.user?._id)}
+          size="small"
+          color={isMuted ? "error" : "default"}
+        >
+          {isMuted ? (
+            <LockOpen fontSize="small" />
+          ) : (
+            <Lock fontSize="small" />
+          )}
+        </IconButton>
+        <IconButton
+          onClick={() => handleRemoveParticipant(participant.user?._id)}
+          size="small"
+          color="error"
+        >
+          <DeleteOutline fontSize="small" />
+        </IconButton>
+      </Box>
+    </ListItem>
+  );
+};
 
 export const ParticipantsList = ({
   participants,
   participantCount,
   activeUsers,
   mutedStudents,
-  handleToggleMute,
   handleRemoveParticipant,
   handleUnblockStudent,
   handleUnblockAll,
@@ -149,7 +144,6 @@ export const ParticipantsList = ({
                 participant={participant}
                 getParticipantStatus={getParticipantStatus}
                 mutedStudents={mutedStudents}
-                handleToggleMute={handleToggleMute}
                 handleRemoveParticipant={handleRemoveParticipant}
                 handleUnblockStudent={handleUnblockStudent}
               />

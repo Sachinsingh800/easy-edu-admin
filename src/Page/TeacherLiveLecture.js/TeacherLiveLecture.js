@@ -46,17 +46,19 @@ const TeacherLiveLecture = () => {
   const profile = JSON.parse(localStorage.getItem("profile"));
   const token = Cookies.get("token");
 
-
-
   // Audio control handlers
   const handleBlockAll = () => {
     socketRef.current.emit("student-unmute-request", { lectureId });
-    setMutedStudents(new Set([...mutedStudents, ...participants.map(p => p.user?._id)]));
+    setMutedStudents(
+      new Set([...mutedStudents, ...participants.map((p) => p.user?._id)])
+    );
   };
 
   const handleUnblockStudent = (userId) => {
     socketRef.current.emit("unblock-student", { lectureId, userId });
-    setMutedStudents(prev => new Set([...prev].filter(id => id !== userId)));
+    setMutedStudents(
+      (prev) => new Set([...prev].filter((id) => id !== userId))
+    );
   };
 
   const handleUnblockAll = () => {
@@ -64,12 +66,10 @@ const TeacherLiveLecture = () => {
     setMutedStudents(new Set());
   };
 
-
   // Handle sound control for all audio tracks
   useEffect(() => {
-    
     const updateAllAudioTracks = () => {
-      audioTracksRef.current.forEach(track => {
+      audioTracksRef.current.forEach((track) => {
         try {
           track.setVolume(enableSound ? 100 : 0);
         } catch (error) {
@@ -80,21 +80,6 @@ const TeacherLiveLecture = () => {
     updateAllAudioTracks();
   }, [enableSound]);
 
-  const handleToggleMute = (userId) => {
-    if (!userId) return;
-    const isMuted = mutedStudents.has(userId);
-
-    setMutedStudents((prev) => {
-      const newSet = new Set(prev);
-      isMuted ? newSet.delete(userId) : newSet.add(userId);
-      return newSet;
-    });
-
-    socketRef.current.emit(isMuted ? "unmute-student" : "mute-student", {
-      lectureId,
-      userId,
-    });
-  };
 
   const initializeAgora = async () => {
     const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
@@ -122,12 +107,15 @@ const TeacherLiveLecture = () => {
       user.audioTrack.setVolume(enableSound ? 100 : 0);
     }
 
-    setActiveUsers((prev) =>
-      new Map(prev.set(user.uid, {
-        uid: user.uid,
-        hasAudio: user.hasAudio,
-        hasVideo: user.hasVideo,
-      }))
+    setActiveUsers(
+      (prev) =>
+        new Map(
+          prev.set(user.uid, {
+            uid: user.uid,
+            hasAudio: user.hasAudio,
+            hasVideo: user.hasVideo,
+          })
+        )
     );
   };
 
@@ -386,7 +374,6 @@ const TeacherLiveLecture = () => {
               participantCount={participantCount}
               activeUsers={activeUsers}
               mutedStudents={mutedStudents}
-              handleToggleMute={handleToggleMute}
               handleRemoveParticipant={handleRemoveParticipant}
               getParticipantStatus={getParticipantStatus}
               handleUnblockStudent={handleUnblockStudent}

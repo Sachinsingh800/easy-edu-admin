@@ -50,7 +50,7 @@ const TeacherLiveLecture = () => {
   const handleBlockAll = () => {
     socketRef.current.emit("student-unmute-request", { lectureId });
     setMutedStudents(
-      new Set([...mutedStudents, ...participants.map((p) => p.user?._id)])
+      new Set([...participants.map((p) => p.user?._id)])
     );
   };
 
@@ -59,6 +59,11 @@ const TeacherLiveLecture = () => {
     setMutedStudents(
       (prev) => new Set([...prev].filter((id) => id !== userId))
     );
+  };
+
+  const handleBlockStudent = (userId) => {
+    socketRef.current.emit("block-student", { lectureId, userId });
+    setMutedStudents((prev) => new Set([...prev, userId]));
   };
 
   const handleUnblockAll = () => {
@@ -79,7 +84,6 @@ const TeacherLiveLecture = () => {
     };
     updateAllAudioTracks();
   }, [enableSound]);
-
 
   const initializeAgora = async () => {
     const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
@@ -227,7 +231,6 @@ const TeacherLiveLecture = () => {
   const getParticipantStatus = (userId) =>
     Array.from(activeUsers.values()).some((u) => u.uid === userId?.toString());
 
-  // Socket.io useEffect remains the same as original
   useEffect(() => {
     muteSoundRef.current = new Audio("/sounds/mute-sound.mp3");
     unmuteSoundRef.current = new Audio("/sounds/unmute-sound.mp3");
@@ -377,6 +380,7 @@ const TeacherLiveLecture = () => {
               handleRemoveParticipant={handleRemoveParticipant}
               getParticipantStatus={getParticipantStatus}
               handleUnblockStudent={handleUnblockStudent}
+              handleBlockStudent={handleBlockStudent}
               handleUnblockAll={handleUnblockAll}
               handleBlockAll={handleBlockAll}
             />

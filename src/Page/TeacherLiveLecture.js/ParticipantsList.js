@@ -28,6 +28,7 @@ const ParticipantListItem = ({
   mutedStudents,
   handleRemoveParticipant,
   handleUnblockStudent,
+  handleBlockStudent,
 }) => {
   const isMuted = mutedStudents.has(participant.user?._id);
   
@@ -68,7 +69,11 @@ const ParticipantListItem = ({
         />
 
         <IconButton
-          onClick={() => handleUnblockStudent(participant.user?._id)}
+          onClick={() => 
+            isMuted 
+              ? handleUnblockStudent(participant.user?._id)
+              : handleBlockStudent(participant.user?._id)
+          }
           size="small"
           color={isMuted ? "error" : "default"}
         >
@@ -97,6 +102,7 @@ export const ParticipantsList = ({
   mutedStudents,
   handleRemoveParticipant,
   handleUnblockStudent,
+  handleBlockStudent,
   handleUnblockAll,
   handleBlockAll,
 }) => {
@@ -146,6 +152,7 @@ export const ParticipantsList = ({
                 mutedStudents={mutedStudents}
                 handleRemoveParticipant={handleRemoveParticipant}
                 handleUnblockStudent={handleUnblockStudent}
+                handleBlockStudent={handleBlockStudent}
               />
             ))
           )}

@@ -31,7 +31,7 @@ const ParticipantListItem = ({
   handleBlockStudent,
 }) => {
   const isMuted = mutedStudents.has(participant.user?._id);
-  
+
   return (
     <ListItem key={participant.user?._id} sx={{ py: 1 }}>
       <ListItemAvatar>
@@ -69,19 +69,15 @@ const ParticipantListItem = ({
         />
 
         <IconButton
-          onClick={() => 
-            isMuted 
+          onClick={() =>
+            isMuted
               ? handleUnblockStudent(participant.user?._id)
               : handleBlockStudent(participant.user?._id)
           }
           size="small"
           color={isMuted ? "error" : "default"}
         >
-          {isMuted ? (
-            <LockOpen fontSize="small" />
-          ) : (
-            <Lock fontSize="small" />
-          )}
+          {isMuted ? <LockOpen fontSize="small" /> : <Lock fontSize="small" />}
         </IconButton>
         <IconButton
           onClick={() => handleRemoveParticipant(participant.user?._id)}
@@ -109,8 +105,9 @@ export const ParticipantsList = ({
   const getParticipantStatus = (userId) =>
     Array.from(activeUsers.values()).some((u) => u.uid === userId?.toString());
 
-  const isAllBlocked = participants.length > 0 && 
-    participants.every(participant => 
+  const isAllBlocked =
+    participants.length > 0 &&
+    participants.every((participant) =>
       mutedStudents.has(participant.user?._id)
     );
 
@@ -132,7 +129,7 @@ export const ParticipantsList = ({
             size="small"
             disabled={participants.length === 0}
           >
-            {isAllBlocked ? 'Unblock All' : 'Block All'}
+            {isAllBlocked ? "Unblock All" : "Block All"}
           </Button>
         </Box>
 

@@ -109,6 +109,11 @@ export const ParticipantsList = ({
   const getParticipantStatus = (userId) =>
     Array.from(activeUsers.values()).some((u) => u.uid === userId?.toString());
 
+  const isAllBlocked = participants.length > 0 && 
+    participants.every(participant => 
+      mutedStudents.has(participant.user?._id)
+    );
+
   return (
     <Card sx={{ mt: 2, height: 400 }}>
       <CardContent>
@@ -118,23 +123,16 @@ export const ParticipantsList = ({
 
         <Divider sx={{ mb: 2 }} />
 
-        <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between" }}>
+        <Box sx={{ mb: 2, display: "flex", justifyContent: "center" }}>
           <Button
             variant="contained"
-            color="error"
-            onClick={handleBlockAll}
-            startIcon={<Lock />}
+            color={isAllBlocked ? "primary" : "error"}
+            onClick={isAllBlocked ? handleUnblockAll : handleBlockAll}
+            startIcon={isAllBlocked ? <LockOpen /> : <Lock />}
             size="small"
+            disabled={participants.length === 0}
           >
-            Block All
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleUnblockAll}
-            startIcon={<LockOpen />}
-            size="small"
-          >
-            Unblock All
+            {isAllBlocked ? 'Unblock All' : 'Block All'}
           </Button>
         </Box>
 

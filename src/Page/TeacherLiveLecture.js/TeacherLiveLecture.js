@@ -50,7 +50,7 @@ const TeacherLiveLecture = () => {
 
   // Audio control handlers
   const handleBlockAll = () => {
-    socketRef.current.emit("block-all", { lectureId });
+    socketRef.current.emit("student-unmute-request", { lectureId });
     setMutedStudents(new Set([...mutedStudents, ...participants.map(p => p.user?._id)]));
   };
 

@@ -100,7 +100,7 @@ socket.on("unblock-all", ({ lectureId }) => {
     );
     io.to(lecture-${lectureId}).emit("audio-control", {
       unmuteBlocked: false,
-      // mute: false,
+      mute: false,
       lectureId,
       message: "Admin has unblocked unmute for all. You may now unmute.",
     });

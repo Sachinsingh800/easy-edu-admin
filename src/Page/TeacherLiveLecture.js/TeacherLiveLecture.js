@@ -13,12 +13,16 @@ import {
   Grid,
   Card,
   CircularProgress,
+  Fade,
+  Grow,
+  Slide,
 } from "@mui/material";
-import { LiveTv } from "@mui/icons-material";
+import { LiveTv, FiberManualRecord } from "@mui/icons-material";
 import { StatusChip } from "./StatusChip";
 import { LectureInfo } from "./LectureInfo";
 import { Controls } from "./Controls";
 import { ParticipantsList } from "./ParticipantsList";
+import styles from "./TeacherLiveLecture.module.css";
 
 const TeacherLiveLecture = () => {
   const { lectureId } = useParams();
@@ -302,99 +306,101 @@ const TeacherLiveLecture = () => {
   }, [lectureId, token]);
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-        <Box display="flex" alignItems="center" mb={3}>
-          <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
-            Live Lecture Controller
-          </Typography>
-          <StatusChip status={status} />
-        </Box>
+    <Container maxWidth="xl" className={styles.container}>
+      <Fade in={true} timeout={800}>
+        <Paper elevation={0} className={styles.glassMain}>
+          <Box className={styles.header}>
+            <Grow in={true}>
+              <Typography variant="h3" className={styles.title}>
+                Live Lecture Studio
+                <FiberManualRecord className={styles.liveDot} />
+              </Typography>
+            </Grow>
+            <StatusChip status={status} className={styles.statusChip} />
+          </Box>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Card sx={{ height: 500, bgcolor: "background.default" }}>
-              <div
-                ref={videoContainerRef}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  padding: "10px",
-                }}
-              />
-              {status !== "connected" && (
-                <Box
-                  position="absolute"
-                  top="50%"
-                  left="50%"
-                  sx={{
-                    transform: "translate(-50%, -50%)",
-                    textAlign: "center",
-                    color: "text.secondary",
-                  }}
-                >
-                  <LiveTv sx={{ fontSize: 80, mb: 2 }} />
-                  <Typography variant="h6">
-                    {status === "ready" && "Ready to start broadcast"}
-                    {status === "ended" && "Lecture session ended"}
-                    {status === "disconnected" && "Not connected"}
-                  </Typography>
-                </Box>
-              )}
-            </Card>
-          </Grid>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Card className={styles.videoGlassCard}>
+                <div
+                  ref={videoContainerRef}
+                  className={styles.videoContainer}
+                />
+                {status !== "connected" && (
+                  <Box className={styles.videoPlaceholder}>
+                    <Slide in={true} direction="up">
+                      <div>
+                        <LiveTv className={styles.videoPlaceholderIcon} />
+                        <Typography variant="h6" gutterBottom>
+                          {status === "ready" && "Broadcast Studio Ready"}
+                          {status === "ended" && "Lecture Concluded"}
+                          {status === "disconnected" && "Awaiting Connection"}
+                        </Typography>
+                        {status === "ready" && (
+                          <CircularProgress
+                            size={48}
+                            className={styles.loadingSpinner}
+                          />
+                        )}
+                      </div>
+                    </Slide>
+                  </Box>
+                )}
+              </Card>
+            </Grid>
 
-          <Grid item xs={12} md={4}>
-            <LectureInfo
-              lectureId={lectureId}
-              channelName={channelName}
-              status={status}
-              participantCount={participantCount}
-            />
-
-            <Paper sx={{ p: 2, borderRadius: 2 }}>
-              <Controls
+            <Grid item xs={12} md={4}>
+              <LectureInfo
+                lectureId={lectureId}
+                channelName={channelName}
                 status={status}
-                loading={loading}
-                cameraEnabled={cameraEnabled}
-                micEnabled={micEnabled}
-                enableSound={enableSound}
-                startBroadcast={startBroadcast}
-                stopBroadcast={stopBroadcast}
-                handleGoLive={handleGoLive}
-                toggleCamera={toggleCamera}
-                toggleMic={toggleMic}
-                setEnableSound={setEnableSound}
+                participantCount={participantCount}
+                className={styles.infoGlass}
               />
-            </Paper>
 
-            <ParticipantsList
-              participants={participants}
-              participantCount={participantCount}
-              activeUsers={activeUsers}
-              mutedStudents={mutedStudents}
-              handleRemoveParticipant={handleRemoveParticipant}
-              getParticipantStatus={getParticipantStatus}
-              handleUnblockStudent={handleUnblockStudent}
-              handleBlockStudent={handleBlockStudent}
-              handleUnblockAll={handleUnblockAll}
-              handleBlockAll={handleBlockAll}
-            />
+              <Paper elevation={0} className={styles.controlsGlass}>
+                <Controls
+                  status={status}
+                  loading={loading}
+                  cameraEnabled={cameraEnabled}
+                  micEnabled={micEnabled}
+                  enableSound={enableSound}
+                  startBroadcast={startBroadcast}
+                  stopBroadcast={stopBroadcast}
+                  handleGoLive={handleGoLive}
+                  toggleCamera={toggleCamera}
+                  toggleMic={toggleMic}
+                  setEnableSound={setEnableSound}
+                />
+              </Paper>
+
+              <ParticipantsList
+                participants={participants}
+                participantCount={participantCount}
+                activeUsers={activeUsers}
+                mutedStudents={mutedStudents}
+                handleRemoveParticipant={handleRemoveParticipant}
+                getParticipantStatus={getParticipantStatus}
+                handleUnblockStudent={handleUnblockStudent}
+                handleBlockStudent={handleBlockStudent}
+                handleUnblockAll={handleUnblockAll}
+                handleBlockAll={handleBlockAll}
+                className={styles.participantsGlass}
+              />
+            </Grid>
           </Grid>
-        </Grid>
 
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={() => setSnackbarOpen(false)}
-          message={message}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        />
-      </Paper>
+          <Snackbar
+            open={snackbarOpen}
+            autoHideDuration={6000}
+            onClose={() => setSnackbarOpen(false)}
+            message={message}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            TransitionComponent={Slide}
+            className={styles.snackbar}
+          />
+        </Paper>
+      </Fade>
     </Container>
   );
 };

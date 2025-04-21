@@ -305,7 +305,6 @@ const TeacherLiveLecture = () => {
     };
 
     const handleNewMessage = (message) => {
-      console.log(message,"new messagessdasjdsadjsahjdasghdhsg")
       setMessages((prev) => [...prev, message]);
     };
 
@@ -314,7 +313,6 @@ const TeacherLiveLecture = () => {
     };
 
     const handleMessageHistory = (msgs) => {
-      console.log(msgs,",,,,,,,,,,,,sav")
       setMessages(msgs);
     };
 

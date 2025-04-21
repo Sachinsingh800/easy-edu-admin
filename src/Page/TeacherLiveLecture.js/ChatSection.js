@@ -53,7 +53,7 @@ const ChatSection = ({
         </Typography>
         <div className={styles.metaInfo}>
           <span className={styles.messageCount}>{messages.length} messages</span>
-          <span className={styles.connectionStatus}>{status.toUpperCase()}</span>
+          <span className={styles.connectionStatus}>{status?.toUpperCase()}</span>
         </div>
       </div>
       
@@ -70,7 +70,7 @@ const ChatSection = ({
                   filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
                 }}
               >
-                {getSenderName(msg.sender)[0].toUpperCase()}
+                {getSenderName(msg?.sender)[0]?.toUpperCase()}
               </Avatar>
               <div className={styles.messageContent}>
                 <div className={styles.messageHeader}>

@@ -22,6 +22,7 @@ import { StatusChip } from "./StatusChip";
 import { LectureInfo } from "./LectureInfo";
 import { Controls } from "./Controls";
 import { ParticipantsList } from "./ParticipantsList";
+import ChatSection from "./ChatSection";
 import styles from "./TeacherLiveLecture.module.css";
 
 const TeacherLiveLecture = () => {
@@ -39,6 +40,8 @@ const TeacherLiveLecture = () => {
   const [activeUsers, setActiveUsers] = useState(new Map());
   const [mutedStudents, setMutedStudents] = useState(new Set());
   const [enableSound, setEnableSound] = useState(true);
+  const [messages, setMessages] = useState([]);
+  const [isPrivateChat, setIsPrivateChat] = useState(false);
 
   const localStreamRef = useRef(null);
   const clientRef = useRef(null);
@@ -49,6 +52,27 @@ const TeacherLiveLecture = () => {
   const unmuteSoundRef = useRef(null);
   const profile = JSON.parse(localStorage.getItem("profile"));
   const token = Cookies.get("token");
+
+  // Message handlers
+  const handleSendMessage = (messageText) => {
+    if (!messageText.trim()) return;
+    socketRef.current.emit("send-message", {
+      lectureId,
+      message: messageText,
+    });
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    socketRef.current.emit("delete-message", { messageId });
+  };
+
+
+  // Request message history when connected
+  useEffect(() => {
+    if (socketRef.current && status === "connected") {
+      socketRef.current.emit("request-message-history-admin", { lectureId });
+    }
+  }, [status, lectureId]);
 
   // Audio control handlers
   const handleBlockAll = () => {
@@ -280,6 +304,29 @@ const TeacherLiveLecture = () => {
       setLoading(false);
     };
 
+    const handleNewMessage = (message) => {
+      console.log(message,"new messagessdasjdsadjsahjdasghdhsg")
+      setMessages((prev) => [...prev, message]);
+    };
+
+    const handleMessageDeleted = (messageId) => {
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+    };
+
+    const handleMessageHistory = (msgs) => {
+      console.log(msgs,",,,,,,,,,,,,sav")
+      setMessages(msgs);
+    };
+
+    const handleSocketError = (error) => {
+      setMessage(error.message);
+      setSnackbarOpen(true);
+    };
+
+    const handleChatUpdate = (data) => {
+      setIsPrivateChat(data.privateChat);
+    };
+
     newSocket.on("connect", handleConnect);
     newSocket.on("participants-update", handleParticipantsUpdate);
     newSocket.on("go-live-success", handleGoLiveSuccess);
@@ -288,6 +335,11 @@ const TeacherLiveLecture = () => {
     newSocket.on("go-live-error", handleErrors);
     newSocket.on("end-lecture-error", handleErrors);
     newSocket.on("lecture-error", handleErrors);
+    newSocket.on("new-message", handleNewMessage);
+    newSocket.on("message-deleted", handleMessageDeleted);
+    newSocket.on("message-history", handleMessageHistory);
+    newSocket.on("socket-error", handleSocketError);
+    newSocket.on("private-chat-updated", handleChatUpdate);
 
     return () => {
       newSocket.disconnect();
@@ -299,106 +351,120 @@ const TeacherLiveLecture = () => {
       newSocket.off("go-live-error", handleErrors);
       newSocket.off("end-lecture-error", handleErrors);
       newSocket.off("lecture-error", handleErrors);
+      newSocket.off("new-message", handleNewMessage);
+      newSocket.off("message-deleted", handleMessageDeleted);
+      newSocket.off("message-history", handleMessageHistory);
+      newSocket.off("socket-error", handleSocketError);
+      newSocket.off("private-chat-updated", handleChatUpdate);
       stopBroadcast();
     };
   }, [lectureId, token]);
 
   return (
     <Container maxWidth="xl" className={styles.container}>
-    <Fade in={true} timeout={800}>
-      <Paper elevation={0} className={styles.glassMain}>
-        <Box className={styles.header}>
-          <Grow in={true}>
-            <Typography variant="h3" className={styles.title}>
-              Live Lecture Studio
-              <FiberManualRecord className={styles.liveDot} />
-            </Typography>
-          </Grow>
-          <StatusChip status={status} className={styles.statusChip} />
-        </Box>
+      <Fade in={true} timeout={800}>
+        <Paper elevation={0} className={styles.glassMain}>
+          <Box className={styles.header}>
+            <Grow in={true}>
+              <Typography variant="h3" className={styles.title}>
+                Live Lecture Studio
+                <FiberManualRecord className={styles.liveDot} />
+              </Typography>
+            </Grow>
+            <StatusChip status={status} className={styles.statusChip} />
+          </Box>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Card className={styles.videoGlassCard}>
-              <LectureInfo
-                lectureId={lectureId}
-                channelName={channelName}
-                status={status}
-                participantCount={participantCount}
-                className={styles.infoGlass}
-              />
-              <div
-                ref={videoContainerRef}
-                className={styles.videoContainer}
-              />
-              {status !== "connected" && (
-                <Box className={styles.videoPlaceholder}>
-                  <Slide in={true} direction="up">
-                    <div>
-                      <LiveTv className={styles.videoPlaceholderIcon} />
-                      <Typography variant="h6" gutterBottom>
-                        {status === "ready" && "Broadcast Studio Ready"}
-                        {status === "ended" && "Lecture Concluded"}
-                        {status === "disconnected" && "Awaiting Connection"}
-                      </Typography>
-                      {status === "ready" && (
-                        <CircularProgress
-                          size={48}
-                          className={styles.loadingSpinner}
-                        />
-                      )}
-                    </div>
-                  </Slide>
-                </Box>
-              )}
-              {/* Positioned Controls */}
-              <div className={styles.controlsWrapper}>
-                <Controls
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Card className={styles.videoGlassCard}>
+                <LectureInfo
+                  lectureId={lectureId}
+                  channelName={channelName}
                   status={status}
-                  loading={loading}
-                  cameraEnabled={cameraEnabled}
-                  micEnabled={micEnabled}
-                  enableSound={enableSound}
-                  startBroadcast={startBroadcast}
-                  stopBroadcast={stopBroadcast}
-                  handleGoLive={handleGoLive}
-                  toggleCamera={toggleCamera}
-                  toggleMic={toggleMic}
-                  setEnableSound={setEnableSound}
+                  participantCount={participantCount}
+                  className={styles.infoGlass}
                 />
-              </div>
-            </Card>
+                <div
+                  ref={videoContainerRef}
+                  className={styles.videoContainer}
+                />
+                {status !== "connected" && (
+                  <Box className={styles.videoPlaceholder}>
+                    <Slide in={true} direction="up">
+                      <div>
+                        <LiveTv className={styles.videoPlaceholderIcon} />
+                        <Typography variant="h6" gutterBottom>
+                          {status === "ready" && "Broadcast Studio Ready"}
+                          {status === "ended" && "Lecture Concluded"}
+                          {status === "disconnected" && "Awaiting Connection"}
+                        </Typography>
+                        {status === "ready" && (
+                          <CircularProgress
+                            size={48}
+                            className={styles.loadingSpinner}
+                          />
+                        )}
+                      </div>
+                    </Slide>
+                  </Box>
+                )}
+                {/* Positioned Controls */}
+                <div className={styles.controlsWrapper}>
+                  <Controls
+                    status={status}
+                    loading={loading}
+                    cameraEnabled={cameraEnabled}
+                    micEnabled={micEnabled}
+                    enableSound={enableSound}
+                    startBroadcast={startBroadcast}
+                    stopBroadcast={stopBroadcast}
+                    handleGoLive={handleGoLive}
+                    toggleCamera={toggleCamera}
+                    toggleMic={toggleMic}
+                    setEnableSound={setEnableSound}
+                  />
+                </div>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <ParticipantsList
+                participants={participants}
+                participantCount={participantCount}
+                activeUsers={activeUsers}
+                mutedStudents={mutedStudents}
+                handleRemoveParticipant={handleRemoveParticipant}
+                getParticipantStatus={getParticipantStatus}
+                handleUnblockStudent={handleUnblockStudent}
+                handleBlockStudent={handleBlockStudent}
+                handleUnblockAll={handleUnblockAll}
+                handleBlockAll={handleBlockAll}
+                className={styles.participantsGlass}
+              />
+              <br/>
+              <ChatSection
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                onDeleteMessage={handleDeleteMessage}
+                status={status}
+                isPrivateChat={isPrivateChat}
+                isAdmin={true}
+              />
+            </Grid>
           </Grid>
 
-          <Grid item xs={12} md={4}>
-            <ParticipantsList
-              participants={participants}
-              participantCount={participantCount}
-              activeUsers={activeUsers}
-              mutedStudents={mutedStudents}
-              handleRemoveParticipant={handleRemoveParticipant}
-              getParticipantStatus={getParticipantStatus}
-              handleUnblockStudent={handleUnblockStudent}
-              handleBlockStudent={handleBlockStudent}
-              handleUnblockAll={handleUnblockAll}
-              handleBlockAll={handleBlockAll}
-              className={styles.participantsGlass}
-            />
-          </Grid>
-        </Grid>
-
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={() => setSnackbarOpen(false)}
-          message={message}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          TransitionComponent={Slide}
-          className={styles.snackbar}
-        />
-      </Paper>
-    </Fade>
-  </Container>
+          <Snackbar
+            open={snackbarOpen}
+            autoHideDuration={6000}
+            onClose={() => setSnackbarOpen(false)}
+            message={message}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            TransitionComponent={Slide}
+            className={styles.snackbar}
+          />
+        </Paper>
+      </Fade>
+    </Container>
   );
 };
 

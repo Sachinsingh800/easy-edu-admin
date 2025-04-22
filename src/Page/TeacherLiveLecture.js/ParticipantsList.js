@@ -58,10 +58,10 @@ const ParticipantListItem = ({
               className={`${styles.avatar} ${
                 isActive ? styles.activeAvatar : ""
               }`}
-              sx={{ 
-                width: isMobile ? 32 : 40, 
+              sx={{
+                width: isMobile ? 32 : 40,
                 height: isMobile ? 32 : 40,
-                filter: isActive ? 'drop-shadow(0 0 4px #4CAF50)' : 'none'
+                filter: isActive ? "drop-shadow(0 0 4px #4CAF50)" : "none",
               }}
             >
               {participant.user?.name?.charAt(0) || "U"}
@@ -74,7 +74,6 @@ const ParticipantListItem = ({
               <span className={styles.nameText}>
                 {participant.user?.name || "Anonymous User"}
               </span>
-              {isMuted && <MicOff className={styles.mutedIcon} />}
             </Typography>
           }
           secondary={
@@ -160,7 +159,7 @@ export const ParticipantsList = ({
     participants.every((participant) =>
       mutedStudents.has(participant.user?._id)
     );
-    
+
   return (
     <Fade in={true} timeout={800}>
       <Card className={styles.glassCard}>

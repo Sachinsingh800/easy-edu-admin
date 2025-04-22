@@ -443,7 +443,7 @@ const TeacherLiveLecture = () => {
               right: 0,
               top: 0,
               bottom: 0,
-              width: isMobile ? "100%" : "380px",
+              width: isMobile ? "100%" : "390px",
               maxWidth: "95vw",
               transform: showParticipants
                 ? "translateX(0)"
@@ -528,6 +528,15 @@ const TeacherLiveLecture = () => {
               <StatusChip status={status} />
               <Box sx={{ flexGrow: 1 }} />
               <IconButton
+                onClick={handleToggleChat}
+                sx={{
+                  color: "#fff",
+                  "&:hover": { background: "rgba(255,255,255,0.1)" },
+                }}
+              >
+                <ChatBubbleOutline />
+              </IconButton>
+              <IconButton
                 onClick={handleToggleParticipants}
                 sx={{
                   color: "#fff",
@@ -536,15 +545,6 @@ const TeacherLiveLecture = () => {
                 }}
               >
                 <PeopleOutline />
-              </IconButton>
-              <IconButton
-                onClick={handleToggleChat}
-                sx={{
-                  color: "#fff",
-                  "&:hover": { background: "rgba(255,255,255,0.1)" },
-                }}
-              >
-                <ChatBubbleOutline />
               </IconButton>
               <LectureInfo
                 lectureId={lectureId}

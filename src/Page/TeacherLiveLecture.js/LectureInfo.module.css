@@ -29,7 +29,7 @@
 
 .popoverContent {
   padding: 1.5rem;
-  min-width: 300px;
+  width: 450px;
   background: transparent !important;
 }
 
@@ -106,4 +106,9 @@
   color: #69db7c !important;
   font-weight: 600 !important;
   text-shadow: 0 0 8px rgba(105, 219, 124, 0.3);
+}
+@media (max-width:400px){
+  .popoverContent {
+    width: 300px;
+  }
 }

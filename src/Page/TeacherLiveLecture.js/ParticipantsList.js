@@ -1,4 +1,4 @@
-// components/ParticipantsList.jsx
+import React from "react";
 import {
   Card,
   CardContent,
@@ -16,6 +16,8 @@ import {
   Fade,
   Grow,
   Slide,
+  Tooltip,
+  Badge,
 } from "@mui/material";
 import {
   Mic,
@@ -23,6 +25,8 @@ import {
   DeleteOutline,
   LockOpen,
   Lock,
+  Person,
+  PersonOff,
 } from "@mui/icons-material";
 import styles from './ParticipantsList.module.css';
 
@@ -38,20 +42,31 @@ const ParticipantListItem = ({
   const isActive = getParticipantStatus(participant.user?._id);
 
   return (
-    <Grow in={true} timeout={500}>
+    <Slide in={true} direction="up" timeout={500}>
       <ListItem className={styles.listItem} sx={{ py: 1 }}>
         <ListItemAvatar>
-          <Avatar
-            src={participant.user?.avatar}
-            className={`${styles.avatar} ${isActive ? styles.activeAvatar : ''}`}
+          <Badge
+            overlap="circular"
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            variant="dot"
+            color={isActive ? "success" : "error"}
+            invisible={!participant.user?._id}
           >
-            {participant.user?.name?.charAt(0) || "U"}
-          </Avatar>
+            <Avatar
+              src={participant.user?.avatar}
+              className={`${styles.avatar} ${isActive ? styles.activeAvatar : ''}`}
+            >
+              {participant.user?.name?.charAt(0) || "U"}
+            </Avatar>
+          </Badge>
         </ListItemAvatar>
         <ListItemText
           primary={
             <Typography variant="subtitle1" className={styles.userName}>
               {participant.user?.name || "Anonymous User"}
+              {isMuted && (
+                <MicOff className={styles.mutedIcon} />
+              )}
             </Typography>
           }
           secondary={
@@ -61,33 +76,42 @@ const ParticipantListItem = ({
           }
         />
         <Box className={styles.actionsContainer}>
-          <Chip
-            label={isActive ? "Active" : "Offline"}
-            className={`${styles.statusChip} ${isActive ? styles.activeChip : styles.inactiveChip}`}
-          />
-          <IconButton
-            onClick={() =>
-              isMuted
-                ? handleUnblockStudent(participant.user?._id)
-                : handleBlockStudent(participant.user?._id)
-            }
-            className={`${styles.iconButton} ${isMuted ? styles.blockedButton : ''}`}
-          >
-            {isMuted ? (
-              <LockOpen className={styles.icon} />
-            ) : (
-              <Lock className={styles.icon} />
-            )}
-          </IconButton>
-          <IconButton
-            onClick={() => handleRemoveParticipant(participant.user?._id)}
-            className={styles.iconButton}
-          >
-            <DeleteOutline className={styles.icon} />
-          </IconButton>
+          <Tooltip title={isActive ? "Active participant" : "Currently offline"} arrow>
+            <Chip
+              label={isActive ? "Active" : "Offline"}
+              className={`${styles.statusChip} ${isActive ? styles.activeChip : styles.inactiveChip}`}
+              size="small"
+            />
+          </Tooltip>
+          
+          <Tooltip title={isMuted ? "Unblock microphone" : "Block microphone"} arrow>
+            <IconButton
+              onClick={() =>
+                isMuted
+                  ? handleUnblockStudent(participant.user?._id)
+                  : handleBlockStudent(participant.user?._id)
+              }
+              className={`${styles.iconButton} ${isMuted ? styles.blockedButton : ''}`}
+            >
+              {isMuted ? (
+                <MicOff className={styles.icon} />
+              ) : (
+                <Mic className={styles.icon} />
+              )}
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="Remove participant" arrow>
+            <IconButton
+              onClick={() => handleRemoveParticipant(participant.user?._id)}
+              className={styles.iconButton}
+            >
+              <PersonOff className={styles.icon} />
+            </IconButton>
+          </Tooltip>
         </Box>
       </ListItem>
-    </Grow>
+    </Slide>
   );
 };
 
@@ -117,31 +141,42 @@ export const ParticipantsList = ({
         <CardContent className={styles.cardContent}>
           <Box className={styles.header}>
             <Typography variant="h6" className={styles.title}>
-              Live Participants
-              <span className={styles.countBadge}>{participantCount}</span>
+              <span className={styles.titleText}>Live Participants</span>
+              <span className={styles.countBadge}>
+                {participantCount} {participantCount === 1 ? 'Member' : 'Members'}
+              </span>
             </Typography>
-            <Button
-              variant="contained"
-              className={`${styles.blockAllButton} ${isAllBlocked ? styles.unblockAll : ''}`}
-              onClick={isAllBlocked ? handleUnblockAll : handleBlockAll}
-              startIcon={isAllBlocked ? <LockOpen /> : <Lock />}
-              disabled={participants.length === 0}
+            <Tooltip 
+              title={isAllBlocked ? "Unblock all microphones" : "Block all microphones"} 
+              arrow
             >
-              {isAllBlocked ? "Unblock All" : "Block All"}
-            </Button>
+              <Button
+                variant="contained"
+                className={`${styles.blockAllButton} ${isAllBlocked ? styles.unblockAll : ''}`}
+                onClick={isAllBlocked ? handleUnblockAll : handleBlockAll}
+                startIcon={isAllBlocked ? <LockOpen /> : <Lock />}
+                disabled={participants.length === 0}
+              >
+                {isAllBlocked ? "Unblock All" : "Block All"}
+              </Button>
+            </Tooltip>
           </Box>
 
           <Divider className={styles.divider} />
 
           <List className={styles.participantsList}>
             {participants.length === 0 ? (
-              <Slide in={true} direction="up">
-                <Typography className={styles.emptyState}>
+              <Box className={styles.emptyStateContainer}>
+                <Person className={styles.emptyStateIcon} />
+                <Typography className={styles.emptyStateText}>
                   No active participants
                 </Typography>
-              </Slide>
+                <Typography variant="caption" className={styles.emptyStateSubtext}>
+                  Participants will appear here when they join
+                </Typography>
+              </Box>
             ) : (
-              participants.map((participant) => (
+              participants.map((participant, index) => (
                 <ParticipantListItem
                   key={participant.user?._id}
                   participant={participant}

@@ -431,7 +431,7 @@ const TeacherLiveLecture = () => {
               right: 0,
               top: 0,
               bottom: 0,
-              width: "380px",
+              width: "500px",
               transform: showParticipants
                 ? "translateX(0)"
                 : "translateX(100%)",
@@ -443,7 +443,7 @@ const TeacherLiveLecture = () => {
               boxShadow: "-16px 0 32px rgba(0,0,0,0.3)",
             }}
           >
-            <Box sx={{ p: 3, height: "100%", color: "#fff" }}>
+            <Box sx={{ p: 1, height: "100%", color: "#fff" }}>
               <Box
                 sx={{
                   display: "flex",

@@ -7,16 +7,27 @@ import Cookies from "js-cookie";
 import {
   Box,
   Container,
-  Paper,
   Typography,
   Snackbar,
-  Grid,
-  Card,
   CircularProgress,
   Fade,
-  Grow,
   Slide,
+  IconButton,
+  Drawer,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
+import {
+  PeopleOutline,
+  ChatBubbleOutline,
+  Close,
+  Videocam,
+  VideocamOff,
+  Mic,
+  MicOff,
+  VolumeUp,
+  VolumeOff,
+} from "@mui/icons-material";
 import { LiveTv, FiberManualRecord } from "@mui/icons-material";
 import { StatusChip } from "./StatusChip";
 import { LectureInfo } from "./LectureInfo";
@@ -42,6 +53,11 @@ const TeacherLiveLecture = () => {
   const [enableSound, setEnableSound] = useState(true);
   const [messages, setMessages] = useState([]);
   const [isPrivateChat, setIsPrivateChat] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const localStreamRef = useRef(null);
   const clientRef = useRef(null);
@@ -65,7 +81,6 @@ const TeacherLiveLecture = () => {
   const handleDeleteMessage = (messageId) => {
     socketRef.current.emit("delete-message", { messageId });
   };
-
 
   // Request message history when connected
   useEffect(() => {
@@ -359,76 +374,100 @@ const TeacherLiveLecture = () => {
   }, [lectureId, token]);
 
   return (
-    <Container maxWidth="xl" className={styles.container}>
+    <Box
+      sx={{
+        height: "100vh",
+        overflow: "hidden",
+        position: "relative",
+        background:
+          "radial-gradient(circle at 10% 20%, #1a1a2e 0%, #16213e 100%)",
+      }}
+    >
       <Fade in={true} timeout={800}>
-        <Paper elevation={0} className={styles.glassMain}>
-          <Box className={styles.header}>
-            <Grow in={true}>
-              <Typography variant="h3" className={styles.title}>
-                Live Lecture Studio
-                <FiberManualRecord className={styles.liveDot} />
-              </Typography>
-            </Grow>
-            <StatusChip status={status} className={styles.statusChip} />
+        <Box
+          sx={{
+            height: "100%",
+            display: "flex",
+            transition: "margin 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            marginLeft: showChat ? "380px" : 0,
+            marginRight: showParticipants ? "380px" : 0,
+          }}
+        >
+          {/* Chat Panel */}
+          <Box
+            sx={{
+              position: "fixed",
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: "380px",
+              transform: showChat ? "translateX(0)" : "translateX(-100%)",
+              transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              zIndex: 1200,
+              background: "rgba(25, 25, 40, 0.95)",
+              backdropFilter: "blur(12px)",
+              borderRight: "1px solid rgba(255,255,255,0.1)",
+              boxShadow: "16px 0 32px rgba(0,0,0,0.3)",
+            }}
+          >
+            <Box sx={{ p: 1, height: "100%", color: "#fff" }}>
+              <ChatSection
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                onDeleteMessage={handleDeleteMessage}
+                status={status}
+                isPrivateChat={isPrivateChat}
+                isAdmin={true}
+                setShowChat={setShowChat}
+                sx={{ height: "calc(100% - 64px)" }}
+              />
+            </Box>
           </Box>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
-              <Card className={styles.videoGlassCard}>
-                <LectureInfo
-                  lectureId={lectureId}
-                  channelName={channelName}
-                  status={status}
-                  participantCount={participantCount}
-                  className={styles.infoGlass}
-                />
-                <div
-                  ref={videoContainerRef}
-                  className={styles.videoContainer}
-                />
-                {status !== "connected" && (
-                  <Box className={styles.videoPlaceholder}>
-                    <Slide in={true} direction="up">
-                      <div>
-                        <LiveTv className={styles.videoPlaceholderIcon} />
-                        <Typography variant="h6" gutterBottom>
-                          {status === "ready" && "Broadcast Studio Ready"}
-                          {status === "ended" && "Lecture Concluded"}
-                          {status === "disconnected" && "Awaiting Connection"}
-                        </Typography>
-                        {status === "ready" && (
-                          <CircularProgress
-                            size={48}
-                            className={styles.loadingSpinner}
-                          />
-                        )}
-                      </div>
-                    </Slide>
-                  </Box>
-                )}
-                {/* Positioned Controls */}
-                <div className={styles.controlsWrapper}>
-                  <Controls
-                    status={status}
-                    loading={loading}
-                    cameraEnabled={cameraEnabled}
-                    micEnabled={micEnabled}
-                    enableSound={enableSound}
-                    startBroadcast={startBroadcast}
-                    stopBroadcast={stopBroadcast}
-                    handleGoLive={handleGoLive}
-                    toggleCamera={toggleCamera}
-                    toggleMic={toggleMic}
-                    setEnableSound={setEnableSound}
-                  />
-                </div>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={4}>
+          {/* Participants Panel */}
+          <Box
+            sx={{
+              position: "fixed",
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: "380px",
+              transform: showParticipants
+                ? "translateX(0)"
+                : "translateX(100%)",
+              transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              zIndex: 1200,
+              background: "rgba(25, 25, 40, 0.95)",
+              backdropFilter: "blur(12px)",
+              borderLeft: "1px solid rgba(255,255,255,0.1)",
+              boxShadow: "-16px 0 32px rgba(0,0,0,0.3)",
+            }}
+          >
+            <Box sx={{ p: 3, height: "100%", color: "#fff" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 3,
+                }}
+              >
+                <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  Participants ({participantCount})
+                </Typography>
+                <IconButton
+                  onClick={() => setShowParticipants(false)}
+                  sx={{
+                    color: "#fff",
+                    background: "rgba(255,255,255,0.1)",
+                    "&:hover": { background: "rgba(255,255,255,0.2)" },
+                  }}
+                >
+                  <Close />
+                </IconButton>
+              </Box>
               <ParticipantsList
                 participants={participants}
-                participantCount={participantCount}
                 activeUsers={activeUsers}
                 mutedStudents={mutedStudents}
                 handleRemoveParticipant={handleRemoveParticipant}
@@ -437,19 +476,171 @@ const TeacherLiveLecture = () => {
                 handleBlockStudent={handleBlockStudent}
                 handleUnblockAll={handleUnblockAll}
                 handleBlockAll={handleBlockAll}
-                className={styles.participantsGlass}
+                sx={{ height: "calc(100% - 64px)" }}
               />
-              <br/>
-              <ChatSection
-                messages={messages}
-                onSendMessage={handleSendMessage}
-                onDeleteMessage={handleDeleteMessage}
+            </Box>
+          </Box>
+
+          {/* Main Content Area */}
+          <Box
+            sx={{
+              flex: 1,
+              position: "relative",
+              transition: "all 0.3s ease",
+              overflow: "hidden",
+            }}
+          >
+            {/* Status Bar */}
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                display: "flex",
+                alignItems: "center",
+                p: 2,
+                zIndex: 1000,
+                background: "transparent",
+              }}
+            >
+              <FiberManualRecord
+                sx={{
+                  color: status === "connected" ? "#00ff88" : "#ff3860",
+                  fontSize: 14,
+                  mr: 1.5,
+                  filter: "drop-shadow(0 0 8px rgba(0,255,136,0.5))",
+                }}
+              />
+              <StatusChip status={status} />
+              <Box sx={{ flexGrow: 1 }} />
+              <IconButton
+                onClick={() => setShowParticipants(!showParticipants)}
+                sx={{
+                  color: "#fff",
+                  mr: 2,
+                  "&:hover": { background: "rgba(255,255,255,0.1)" },
+                }}
+              >
+                <PeopleOutline />
+              </IconButton>
+              <IconButton
+                onClick={() => setShowChat(!showChat)}
+                sx={{
+                  color: "#fff",
+                  "&:hover": { background: "rgba(255,255,255,0.1)" },
+                }}
+              >
+                <ChatBubbleOutline />
+              </IconButton>
+              <LectureInfo
+                lectureId={lectureId}
+                channelName={channelName}
                 status={status}
-                isPrivateChat={isPrivateChat}
-                isAdmin={true}
+                participantCount={participantCount}
+                sx={{ ml: 3, color: "#fff" }}
               />
-            </Grid>
-          </Grid>
+            </Box>
+
+            {/* Video Container */}
+            <Box
+              ref={videoContainerRef}
+              sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 2,
+                background:
+                  "radial-gradient(circle at center, #1a1a2e 0%, #16213e 100%)",
+              }}
+            />
+
+            {/* Connection Status Overlay */}
+            {status !== "connected" && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  background: "rgba(0, 0, 0, 0.8)",
+                  zIndex: 999,
+                }}
+              >
+                <Slide in={true} direction="up">
+                  <Box sx={{ textAlign: "center" }}>
+                    <LiveTv
+                      sx={{
+                        fontSize: 80,
+                        mb: 3,
+                        color: "#00ff88",
+                        filter: "drop-shadow(0 0 16px rgba(0,255,136,0.5))",
+                      }}
+                    />
+                    <Typography
+                      variant="h3"
+                      gutterBottom
+                      sx={{
+                        color: "#fff",
+                        fontWeight: 700,
+                        letterSpacing: "1.5px",
+                        mb: 4,
+                      }}
+                    >
+                      {status === "ready" && "BROADCAST READY"}
+                      {status === "ended" && "SESSION ENDED"}
+                      {status === "disconnected" && "AWAITING CONNECTION"}
+                    </Typography>
+                    {status === "ready" && (
+                      <CircularProgress
+                        size={64}
+                        thickness={4}
+                        sx={{ color: "#00ff88" }}
+                      />
+                    )}
+                  </Box>
+                </Slide>
+              </Box>
+            )}
+
+            {/* Controls Bar */}
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                display: "flex",
+                alignItems: "center",
+                padding: 1.5,
+                background: "transparent",
+                zIndex: 1000,
+                justifyContent: "center",
+              }}
+            >
+              <Controls
+                status={status}
+                loading={loading}
+                cameraEnabled={cameraEnabled}
+                micEnabled={micEnabled}
+                enableSound={enableSound}
+                startBroadcast={startBroadcast}
+                stopBroadcast={stopBroadcast}
+                handleGoLive={handleGoLive}
+                toggleCamera={toggleCamera}
+                toggleMic={toggleMic}
+                setEnableSound={setEnableSound}
+              />
+            </Box>
+          </Box>
 
           <Snackbar
             open={snackbarOpen}
@@ -458,11 +649,20 @@ const TeacherLiveLecture = () => {
             message={message}
             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             TransitionComponent={Slide}
-            className={styles.snackbar}
+            sx={{
+              "& .MuiSnackbarContent-root": {
+                background: "rgba(0, 0, 0, 0.9)",
+                color: "#fff",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "12px",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+              },
+            }}
           />
-        </Paper>
+        </Box>
       </Fade>
-    </Container>
+    </Box>
   );
 };
 

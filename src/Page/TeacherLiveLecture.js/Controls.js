@@ -65,6 +65,28 @@ export const Controls = ({
           </IconButton>
         </Grow>
 
+        <Fade in={true} timeout={600}>
+          <Button
+            className={`${styles.mainButton} ${
+              isConnected ? styles.endButton : styles.startButton
+            }`}
+            onClick={isConnected ? stopBroadcast : status === "ready" ? startBroadcast : handleGoLive}
+            disabled={loading}
+          >
+            {loading ? (
+              <CircularProgress className={styles.loader} />
+            ) : (
+              <>
+                {isConnected ? (
+                  <StopCircle className={styles.mainIcon} />
+                ) : (
+                  <LiveTv className={styles.mainIcon} />
+                )}
+              </>
+            )}
+          </Button>
+        </Fade>
+
         <Grow in={true} timeout={500}>
           <IconButton
             className={`${styles.controlButton} ${enableSound ? styles.active : ''}`}
@@ -79,28 +101,6 @@ export const Controls = ({
           </IconButton>
         </Grow>
       </div>
-
-      <Fade in={true} timeout={600}>
-        <Button
-          className={`${styles.mainButton} ${
-            isConnected ? styles.endButton : styles.startButton
-          }`}
-          onClick={isConnected ? stopBroadcast : status === "ready" ? startBroadcast : handleGoLive}
-          disabled={loading}
-        >
-          {loading ? (
-            <CircularProgress className={styles.loader} />
-          ) : (
-            <>
-              {isConnected ? (
-                <StopCircle className={styles.mainIcon} />
-              ) : (
-                <LiveTv className={styles.mainIcon} />
-              )}
-            </>
-          )}
-        </Button>
-      </Fade>
     </div>
   );
 };

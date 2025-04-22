@@ -16,16 +16,6 @@
     overflow: hidden;
   }
   
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding: 1rem 2rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-  }
-  
   .title {
     color: white !important;
     font-weight: 700 !important;

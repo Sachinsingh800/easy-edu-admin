@@ -61,7 +61,7 @@
   }
   
   .participantsList {
-    height: 400px;
+    height: auto;
     overflow-y: auto;
     padding-right: 0.5rem !important;
   }

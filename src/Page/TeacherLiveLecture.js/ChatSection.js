@@ -10,8 +10,11 @@ import {
   IconButton,
   Avatar,
   Divider,
+  Slide,
+  Grow,
+  Fade,
 } from "@mui/material";
-import { Send, Delete } from "@mui/icons-material";
+import { Send, Delete, Close } from "@mui/icons-material";
 import styles from "./ChatSection.module.css";
 
 const ChatSection = ({
@@ -21,12 +24,17 @@ const ChatSection = ({
   status,
   isPrivateChat,
   isAdmin,
+  setShowChat,
 }) => {
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(null);
+  const [animateMessage, setAnimateMessage] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setAnimateMessage(true);
+    const timer = setTimeout(() => setAnimateMessage(false), 500);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   const handleSend = () => {
@@ -35,13 +43,20 @@ const ChatSection = ({
     setNewMessage("");
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   const getSenderName = (sender) => {
-    return sender.name || sender.email.split('@')[0];
+    return sender.email?.split("@")[0] || "Anonymous";
   };
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
@@ -49,59 +64,83 @@ const ChatSection = ({
       <div className={styles.header}>
         <Typography variant="h6" className={styles.sectionTitle}>
           {`Live Chat · ${isPrivateChat ? "Private" : "Public"}`}
-          <span className={styles.statusIndicator} data-status={status.toLowerCase()} />
+          <span className={styles.messageCount}>
+            <span
+              className={styles.statusIndicator}
+              data-status={status.toLowerCase()}
+            />
+            {messages.length} messages
+          </span>
         </Typography>
-        <div className={styles.metaInfo}>
-          <span className={styles.messageCount}>{messages.length} messages</span>
-          <span className={styles.connectionStatus}>{status?.toUpperCase()}</span>
-        </div>
+        <IconButton
+          onClick={() => setShowChat(false)}
+          className={styles.closeButton}
+        >
+          <Close />
+        </IconButton>
       </div>
-      
+
       <List className={styles.messageList}>
-        {messages.map((msg) => (
-          <React.Fragment key={msg._id}>
-            <ListItem alignItems="flex-start" className={styles.messageItem}>
-              <Avatar 
-                className={styles.avatar}
-                sx={{
-                  width: 40,
-                  height: 40,
-                  bgcolor: msg.isAdminMessage ? '#6200ee' : '#2196f3',
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
-                }}
+        {messages.map((msg, index) => (
+          <Slide
+            key={msg._id}
+            in={true}
+            direction="up"
+            timeout={Math.min(index * 50, 500)}
+          >
+            <div>
+              <ListItem
+                alignItems="flex-start"
+                className={`${styles.messageItem} ${
+                  animateMessage ? styles.messageEnter : ""
+                }`}
               >
-                {getSenderName(msg?.sender)[0]?.toUpperCase()}
-              </Avatar>
-              <div className={styles.messageContent}>
-                <div className={styles.messageHeader}>
-                  <div className={styles.senderInfo}>
-                    <span className={styles.senderName}>
-                      {getSenderName(msg.sender)}
-                      {msg.isAdminMessage && (
-                        <span className={styles.adminBadge}>TEACHER</span>
-                      )}
-                    </span>
-                    <span className={styles.messageTime}>
-                      {formatTime(msg.createdAt)}
-                    </span>
+                <Avatar
+                  className={styles.avatar}
+                  sx={{
+                    bgcolor:
+                      msg.sender.role === "admin" ? "#6200ee" : "#2196f3",
+                  }}
+                >
+                  {getSenderName(msg.sender)[0]?.toUpperCase()}
+                </Avatar>
+                <div className={styles.messageContent}>
+                  <div className={styles.messageHeader}>
+                    <div className={styles.senderInfo}>
+                      <span className={styles.senderName}>
+                        {getSenderName(msg.sender)}
+                        <span
+                          className={`${styles.roleBadge} ${
+                            msg.sender.role === "admin"
+                              ? styles.adminBadge
+                              : styles.userBadge
+                          }`}
+                        >
+                          {msg.sender.role === "admin" ? "TEACHER" : "STUDENT"}
+                        </span>
+                      </span>
+                      <span className={styles.messageTime}>
+                        {formatTime(msg.createdAt)}
+                      </span>
+                    </div>
+                    {isAdmin && (
+                      <IconButton
+                        size="small"
+                        onClick={() => onDeleteMessage(msg._id)}
+                        className={styles.deleteButton}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    )}
                   </div>
-                  {isAdmin && (
-                    <IconButton
-                      size="small"
-                      onClick={() => onDeleteMessage(msg._id)}
-                      className={styles.deleteButton}
-                    >
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  )}
+                  <Typography variant="body2" className={styles.messageText}>
+                    {msg.message}
+                  </Typography>
                 </div>
-                <Typography variant="body2" className={styles.messageText}>
-                  {msg.message}
-                </Typography>
-              </div>
-            </ListItem>
-            <Divider className={styles.messageDivider} />
-          </React.Fragment>
+              </ListItem>
+              <Divider className={styles.messageDivider} />
+            </div>
+          </Slide>
         ))}
         <div ref={messagesEndRef} />
       </List>
@@ -113,37 +152,24 @@ const ChatSection = ({
           placeholder="Type your message..."
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+          onKeyPress={handleKeyPress}
           disabled={status !== "connected"}
-          className={styles.messageInput}
+          multiline
+          maxRows={3}
           InputProps={{
-            sx: {
-              borderRadius: '28px',
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              '& fieldset': { borderColor: 'rgba(255,255,255,0.12)' },
-              '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2))' },
-              '&.Mui-focused fieldset': { borderColor: 'rgba(255,255,255,0.3))' },
-            }
+            className: styles.messageInput,
           }}
         />
-        <Button
-          variant="contained"
-          onClick={handleSend}
-          disabled={!newMessage.trim() || status !== "connected"}
-          className={styles.sendButton}
-          sx={{
-            minWidth: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(98, 0, 238, 0.9)',
-            '&:hover': {
-              backgroundColor: 'rgba(98, 0, 238, 1)',
-              transform: 'translateY(-1px)'
-            }
-          }}
-        >
-          <Send sx={{ fontSize: '20px', color: '#ffffff' }} />
-        </Button>
+        <Fade in={newMessage.trim().length > 0}>
+          <Button
+            variant="contained"
+            onClick={handleSend}
+            disabled={!newMessage.trim() || status !== "connected"}
+            className={styles.sendButton}
+          >
+            <Send />
+          </Button>
+        </Fade>
       </div>
     </Card>
   );

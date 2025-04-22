@@ -59,6 +59,17 @@ const TeacherLiveLecture = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  // Modified panel handlers for mobile
+  const handleToggleParticipants = () => {
+    if (isMobile) setShowChat(false);
+    setShowParticipants(!showParticipants);
+  };
+
+  const handleToggleChat = () => {
+    if (isMobile) setShowParticipants(false);
+    setShowChat(!showChat);
+  };
+
   const localStreamRef = useRef(null);
   const clientRef = useRef(null);
   const socketRef = useRef(null);
@@ -400,7 +411,8 @@ const TeacherLiveLecture = () => {
               left: 0,
               top: 0,
               bottom: 0,
-              width: "380px",
+              width: isMobile ? "100%" : "380px",
+              maxWidth: "95vw",
               transform: showChat ? "translateX(0)" : "translateX(-100%)",
               transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               zIndex: 1200,
@@ -431,7 +443,8 @@ const TeacherLiveLecture = () => {
               right: 0,
               top: 0,
               bottom: 0,
-              width: "500px",
+              width: isMobile ? "100%" : "380px",
+              maxWidth: "95vw",
               transform: showParticipants
                 ? "translateX(0)"
                 : "translateX(100%)",
@@ -515,7 +528,7 @@ const TeacherLiveLecture = () => {
               <StatusChip status={status} />
               <Box sx={{ flexGrow: 1 }} />
               <IconButton
-                onClick={() => setShowParticipants(!showParticipants)}
+                onClick={handleToggleParticipants}
                 sx={{
                   color: "#fff",
                   mr: 2,
@@ -525,7 +538,7 @@ const TeacherLiveLecture = () => {
                 <PeopleOutline />
               </IconButton>
               <IconButton
-                onClick={() => setShowChat(!showChat)}
+                onClick={handleToggleChat}
                 sx={{
                   color: "#fff",
                   "&:hover": { background: "rgba(255,255,255,0.1)" },

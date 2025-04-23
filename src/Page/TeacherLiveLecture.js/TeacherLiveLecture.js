@@ -6,14 +6,12 @@ import AgoraRTC from "agora-rtc-sdk-ng";
 import Cookies from "js-cookie";
 import {
   Box,
-  Container,
   Typography,
   Snackbar,
   CircularProgress,
   Fade,
   Slide,
   IconButton,
-  Drawer,
   useTheme,
   useMediaQuery,
   Badge,
@@ -22,12 +20,6 @@ import {
   PeopleOutline,
   ChatBubbleOutline,
   Close,
-  Videocam,
-  VideocamOff,
-  Mic,
-  MicOff,
-  VolumeUp,
-  VolumeOff,
 } from "@mui/icons-material";
 import { LiveTv, FiberManualRecord } from "@mui/icons-material";
 import { StatusChip } from "./StatusChip";
@@ -35,7 +27,6 @@ import { LectureInfo } from "./LectureInfo";
 import { Controls } from "./Controls";
 import { ParticipantsList } from "./ParticipantsList";
 import ChatSection from "./ChatSection";
-import styles from "./TeacherLiveLecture.module.css";
 
 const TeacherLiveLecture = () => {
   const { lectureId } = useParams();

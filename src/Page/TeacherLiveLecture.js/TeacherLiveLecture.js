@@ -23,6 +23,7 @@ import { LectureInfo } from "./LectureInfo";
 import { Controls } from "./Controls";
 import { ParticipantsList } from "./ParticipantsList";
 import ChatSection from "./ChatSection";
+import happypop3 from "../../components/Audio/notification-20-270145.mp3";
 
 const TeacherLiveLecture = () => {
   const { lectureId } = useParams();
@@ -43,6 +44,7 @@ const TeacherLiveLecture = () => {
   const [isPrivateChat, setIsPrivateChat] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const notifyAudioRef = useRef(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -70,6 +72,18 @@ const TeacherLiveLecture = () => {
   // Inside your component
   const prevLengthRef = useRef(messages.length);
   const prevParticipantsLengthRef = useRef(participants.length);
+
+  // Initialize audio elements
+  useEffect(() => {
+    notifyAudioRef.current = new Audio(happypop3);
+    notifyAudioRef.current.volume = 0.2;
+  }, []);
+
+  useEffect(() => {
+    if (participants.length > prevParticipantsLengthRef.current) {
+      notifyAudioRef.current.play();
+    }
+  }, [participants]);
 
   useEffect(() => {
     prevLengthRef.current = messages.length;

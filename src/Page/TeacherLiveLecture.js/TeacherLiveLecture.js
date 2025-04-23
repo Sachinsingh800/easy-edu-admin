@@ -82,9 +82,12 @@ const TeacherLiveLecture = () => {
   const token = Cookies.get("token");
   // Inside your component
   const prevLengthRef = useRef(messages.length);
+  const prevParticipantsLengthRef = useRef(participants.length);
+
   useEffect(() => {
     prevLengthRef.current = messages.length;
-  }, [messages.length]);
+    prevParticipantsLengthRef.current = participants.length;
+  }, [messages.length, participants.length]);
 
   // Message handlers
   const handleSendMessage = (messageText) => {
@@ -583,7 +586,43 @@ const TeacherLiveLecture = () => {
                   "&:hover": { background: "rgba(255,255,255,0.1)" },
                 }}
               >
-                <PeopleOutline />
+                <Badge
+                  color="success"
+                  variant="dot"
+                  invisible={
+                    participants.length === prevParticipantsLengthRef.current
+                  }
+                  sx={{
+                    zIndex: 9999,
+                    "& .MuiBadge-dot": {
+                      // Base styles
+                      backgroundColor: "#00ff88",
+                      // Conditional animation
+                      ...(participants.length !==
+                        prevParticipantsLengthRef.current && {
+                        animation: "pulse 1.5s infinite",
+                        transformOrigin: "center",
+                        boxShadow: "0 0 10px rgba(0, 255, 136, 0.5)",
+                        "@keyframes pulse": {
+                          "0%": {
+                            transform: "scale(1)",
+                            boxShadow: "0 0 0 0 rgba(0, 255, 136, 0.7)",
+                          },
+                          "70%": {
+                            transform: "scale(1.2)",
+                            boxShadow: "0 0 0 10px rgba(0, 255, 136, 0)",
+                          },
+                          "100%": {
+                            transform: "scale(1)",
+                            boxShadow: "0 0 0 0 rgba(0, 255, 136, 0)",
+                          },
+                        },
+                      }),
+                    },
+                  }}
+                >
+                  <PeopleOutline />
+                </Badge>
               </IconButton>
               <LectureInfo
                 lectureId={lectureId}

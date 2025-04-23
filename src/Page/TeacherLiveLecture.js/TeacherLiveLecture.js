@@ -16,11 +16,7 @@ import {
   useMediaQuery,
   Badge,
 } from "@mui/material";
-import {
-  PeopleOutline,
-  ChatBubbleOutline,
-  Close,
-} from "@mui/icons-material";
+import { PeopleOutline, ChatBubbleOutline, Close } from "@mui/icons-material";
 import { LiveTv, FiberManualRecord } from "@mui/icons-material";
 import { StatusChip } from "./StatusChip";
 import { LectureInfo } from "./LectureInfo";
@@ -443,7 +439,7 @@ const TeacherLiveLecture = () => {
               right: 0,
               top: 0,
               bottom: 0,
-              width: isMobile ? "100%" : "390px",
+              width: isMobile ? "100%" : "380px",
               maxWidth: "95vw",
               transform: showParticipants
                 ? "translateX(0)"
@@ -456,13 +452,14 @@ const TeacherLiveLecture = () => {
               boxShadow: "-16px 0 32px rgba(0,0,0,0.3)",
             }}
           >
-            <Box sx={{ p: 1, height: "100%", color: "#fff" }}>
+            <Box sx={{ p: 0, height: "100%", color: "#fff" }}>
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
                   mb: 3,
+                  padding: "0.5rem 1rem",
                 }}
               >
                 <Typography variant="h5" sx={{ fontWeight: 600 }}>

@@ -85,7 +85,9 @@
 }
 
 .actionsContainer {
-  gap: 4px;
+  gap: 5px!important;
+  display: flex;
+  align-items: center;
 }
 
 .statusChip {

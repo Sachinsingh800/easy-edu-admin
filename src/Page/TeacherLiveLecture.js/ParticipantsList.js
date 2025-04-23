@@ -59,8 +59,8 @@ const ParticipantListItem = ({
                 isActive ? styles.activeAvatar : ""
               }`}
               sx={{
-                width: isMobile ? 32 : 40,
-                height: isMobile ? 32 : 40,
+                width: isMobile ? 30 : 35,
+                height: isMobile ?  30 : 35,
                 filter: isActive ? "drop-shadow(0 0 4px #4CAF50)" : "none",
               }}
             >

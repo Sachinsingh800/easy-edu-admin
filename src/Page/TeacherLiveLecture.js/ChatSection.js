@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { Send, Delete, Close } from "@mui/icons-material";
 import styles from "./ChatSection.module.css";
+import happypop3 from "../../components/Audio/happy-pop-3-185288.mp3" 
 
 const ChatSection = ({
   messages,
@@ -29,8 +30,27 @@ const ChatSection = ({
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(null);
   const [animateMessage, setAnimateMessage] = useState(false);
+  const prevMessagesLength = useRef(messages.length);
+  const receiveAudioRef = useRef(null);
+
+  // Initialize audio elements
+  useEffect(() => {
+    receiveAudioRef.current = new Audio(happypop3);
+    receiveAudioRef.current.volume = 0.2;
+  }, []);
 
   useEffect(() => {
+    // Play receive sound when new message arrives (excluding initial load)
+    if (messages.length > prevMessagesLength.current) {
+      if (prevMessagesLength.current > 0) {
+        receiveAudioRef.current.play();
+      }
+      prevMessagesLength.current = messages.length;
+    } else {
+      prevMessagesLength.current = messages.length;
+    }
+
+    // Scroll to bottom and trigger animation
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     setAnimateMessage(true);
     const timer = setTimeout(() => setAnimateMessage(false), 500);
@@ -158,6 +178,29 @@ const ChatSection = ({
           maxRows={3}
           InputProps={{
             className: styles.messageInput,
+            style: {
+              color: "white",
+            },
+            sx: {
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "white",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "white",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "white",
+              },
+              "&::placeholder": {
+                color: "white",
+                opacity: 1,
+              },
+            },
+          }}
+          InputLabelProps={{
+            style: {
+              color: "white",
+            },
           }}
         />
         <Fade in={newMessage.trim().length > 0}>
